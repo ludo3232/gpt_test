@@ -1,0 +1,2 @@
+# Server-side inventory data; keep this file on the server between deployments.
+data/network-data.json

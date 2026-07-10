@@ -9,30 +9,19 @@
 <body>
   <header class="hero">
     <div>
-      <p class="eyebrow">Gestion réseau sans serveur applicatif</p>
+      <p class="eyebrow">Gestion réseau</p>
       <h1>NetHome Manager</h1>
-      <p class="lead">Inventoriez vos réseaux, VLAN et périphériques depuis une app statique hébergeable avec nginx. Les données restent dans le navigateur via localStorage.</p>
     </div>
     <div class="hero-actions">
       <button id="exportData" class="secondary">Exporter JSON</button>
       <label class="secondary file-button">Importer JSON<input id="importData" type="file" accept="application/json"></label>
-      <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option></select>
+      <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option><option value="slate">Thème ardoise</option><option value="sunset">Thème coucher de soleil</option><option value="ocean">Thème océan</option><option value="highcontrast">Contraste élevé</option></select>
       <button id="openNetworkModal">+ Réseau</button>
       <button id="openDeviceModal">+ Appareil</button>
-      <button id="seedDemo">Charger un exemple</button>
     </div>
   </header>
 
   <main class="layout">
-    <section class="panel summary-panel" aria-labelledby="summary-title">
-      <h2 id="summary-title">Résumé</h2>
-      <div id="summaryCards" class="summary-grid"></div>
-      <div class="overview">
-        <h3>Vue d'ensemble</h3>
-        <div id="overviewList" class="overview-list"></div>
-      </div>
-    </section>
-
     <section class="panel inventory-panel">
       <div class="toolbar">
         <div>
@@ -98,7 +87,7 @@
       </form>
     </section></dialog>
 
-  <template id="emptyStateTemplate"><div class="empty-state">Aucun élément à afficher. Ajoutez un réseau puis des périphériques, ou chargez l'exemple.</div></template>
+  <template id="emptyStateTemplate"><div class="empty-state">Aucun élément à afficher. Ajoutez un réseau puis des périphériques.</div></template>
   <script src="app.js"></script>
 </body>
 </html>

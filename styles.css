@@ -54,6 +54,62 @@ body[data-theme="forest"] {
   --input: #06281d;
 }
 
+body[data-theme="slate"] {
+  --bg: #1e293b;
+  --bg-2: #334155;
+  --panel: #0f172a;
+  --muted: #cbd5e1;
+  --text: #f8fafc;
+  --brand: #94a3b8;
+  --accent: #38bdf8;
+  --danger: #f43f5e;
+  --border: #475569;
+  --card: #182235;
+  --input: #111827;
+}
+
+body[data-theme="sunset"] {
+  --bg: #431407;
+  --bg-2: #7c2d12;
+  --panel: #2f160f;
+  --muted: #fed7aa;
+  --text: #fff7ed;
+  --brand: #fb923c;
+  --accent: #facc15;
+  --danger: #fb7185;
+  --border: #9a3412;
+  --card: #3b1d12;
+  --input: #24100a;
+}
+
+body[data-theme="ocean"] {
+  --bg: #082f49;
+  --bg-2: #155e75;
+  --panel: #0c2635;
+  --muted: #a5f3fc;
+  --text: #ecfeff;
+  --brand: #22d3ee;
+  --accent: #67e8f9;
+  --danger: #f87171;
+  --border: #0e7490;
+  --card: #123447;
+  --input: #061e2a;
+}
+
+body[data-theme="highcontrast"] {
+  --bg: #000000;
+  --bg-2: #111111;
+  --panel: #000000;
+  --muted: #ffffff;
+  --text: #ffffff;
+  --brand: #ffff00;
+  --accent: #00ff00;
+  --danger: #ff3333;
+  --border: #ffffff;
+  --card: #050505;
+  --input: #000000;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -105,14 +161,9 @@ a { color: var(--brand); }
   padding: .95rem;
   box-shadow: 0 15px 45px rgba(0, 0, 0, .20);
 }
-.summary-panel, .inventory-panel { grid-column: span 12; }
+.inventory-panel { grid-column: span 12; }
 .form-panel { width: min(760px, 92vw); }
-.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .75rem; }
-.metric, .device-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: .75rem; }
-.metric strong { display: block; font-size: 1.5rem; color: var(--text); }
-.overview-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .55rem; }
-.overview-item { border-left: 3px solid var(--brand); background: color-mix(in srgb, var(--card) 82%, black); padding: .6rem; border-radius: 9px; }
-
+.device-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: .75rem; }
 .stacked-form { display: grid; gap: .65rem; }
 .stacked-form label { display: grid; gap: .25rem; color: var(--muted); }
 input, select, textarea {

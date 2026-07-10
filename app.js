@@ -1,56 +1,43 @@
-const STORAGE_KEY = 'nethome-manager-v1';
+const API_URL = '/api/data';
 const THEME_KEY = 'nethome-manager-theme';
-const state = loadState();
+const state = { networks: [], devices: [] };
 let viewMode = 'tiles';
 
 const $ = (id) => document.getElementById(id);
 const normalize = (value) => (value || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-function loadState() {
-  const fallback = { networks: [], devices: [] };
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || fallback; } catch { return fallback; }
+async function loadState() {
+  const response = await fetch(API_URL, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Impossible de charger le fichier de données serveur.');
+  const data = await response.json();
+  state.networks = Array.isArray(data.networks) ? data.networks : [];
+  state.devices = Array.isArray(data.devices) ? data.devices : [];
 }
-function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); render(); }
-
-function seedDemoData() {
-  state.networks = [
-    { id: uid(), name: 'LAN Principal', cidr: '192.168.1.0/24', zone: 'Production', notes: 'Postes fixes, NAS et imprimantes.' },
-    { id: uid(), name: 'IoT', cidr: '192.168.30.0/24', zone: 'Objets connectés', notes: 'Réseau isolé avec accès Internet uniquement.' },
-    { id: uid(), name: 'Invités', cidr: '192.168.50.0/24', zone: 'Wi-Fi invité', notes: 'Bail DHCP court.' }
-  ];
-  const [lan, iot, guest] = state.networks;
-  state.devices = [
-    { id: uid(), networkId: lan.id, name: 'Routeur fibre', type: 'Routeur', ip: '192.168.1.1', mac: '00:11:22:33:44:55', status: 'Actif', location: 'Baie réseau', login: 'admin', password: 'admin-demo', staticIp: true, dhcp: false, url: 'https://192.168.1.1', notes: 'Passerelle et DNS local.' },
-    { id: uid(), networkId: lan.id, name: 'NAS', type: 'Serveur', ip: '192.168.1.10', mac: 'AA:BB:CC:DD:EE:10', status: 'Actif', location: 'Baie réseau', login: 'nas-admin', password: 'demo-visible', staticIp: true, dhcp: false, url: 'https://192.168.1.10:5001', notes: 'SMB, sauvegardes, monitoring.' },
-    { id: uid(), networkId: iot.id, name: 'Thermostat', type: 'IoT', ip: '192.168.30.21', mac: 'AA:BB:CC:30:00:21', status: 'À vérifier', location: 'Couloir', login: '', password: '', staticIp: false, dhcp: true, url: 'http://192.168.30.21', notes: 'Vérifier mises à jour firmware.' },
-    { id: uid(), networkId: guest.id, name: 'Téléphone invité', type: 'Mobile', ip: '192.168.50.42', mac: 'AA:BB:CC:50:00:42', status: 'Réservé', location: 'Wi-Fi', login: '', password: '', staticIp: false, dhcp: true, url: '', notes: '' }
-  ];
-  saveState();
+async function saveState() {
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(state)
+  });
+  if (!response.ok) throw new Error('Impossible d’enregistrer le fichier de données serveur.');
+  render();
 }
-
+function handleStorageError(error) {
+  alert(`${error.message}
+Vérifiez que le serveur Node est lancé et que data/network-data.json est accessible en écriture.`);
+}
 function networkName(id) { return state.networks.find((n) => n.id === id)?.name || 'Sans réseau'; }
 function ipValue(ip) { return (ip || '').split('.').reduce((acc, part) => (acc * 256) + Number(part || 0), 0); }
 function statusClass(status) { return `status-${normalize(status).replace(/[^a-z0-9]+/g, '-')}`; }
 
-function render() { renderSelects(); renderSummary(); renderInventory(); }
+function render() { renderSelects(); renderInventory(); }
 function renderSelects() {
   const networkOptions = state.networks.map((n) => `<option value="${n.id}">${n.name} (${n.cidr})</option>`).join('');
   $('deviceNetwork').innerHTML = networkOptions || '<option value="">Ajoutez d’abord un réseau</option>';
   $('networkFilter').innerHTML = '<option value="all">Tous les réseaux</option>' + networkOptions;
   const types = [...new Set(state.devices.map((d) => d.type).filter(Boolean))].sort();
   $('typeFilter').innerHTML = '<option value="all">Tous les types</option>' + types.map((t) => `<option>${t}</option>`).join('');
-}
-function renderSummary() {
-  const active = state.devices.filter((d) => d.status === 'Actif').length;
-  const types = new Set(state.devices.map((d) => d.type)).size;
-  $('summaryCards').innerHTML = [
-    ['Réseaux', state.networks.length], ['Périphériques', state.devices.length], ['Actifs', active], ['Types', types]
-  ].map(([label, value]) => `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`).join('');
-  $('overviewList').innerHTML = state.networks.map((n) => {
-    const count = state.devices.filter((d) => d.networkId === n.id).length;
-    return `<div class="overview-item"><strong>${n.name}</strong><br><span>${n.cidr} · ${n.zone || 'zone non définie'} · ${count} périphérique(s)</span><div class="card-actions"><button onclick="editNetwork('${n.id}')">Éditer</button><button class="danger" onclick="deleteNetwork('${n.id}')">Supprimer</button></div></div>`;
-  }).join('') || emptyState();
 }
 function filteredDevices() {
   const query = normalize($('searchInput').value);
@@ -88,7 +75,7 @@ $('networkForm').addEventListener('submit', (event) => {
   const record = { id, name: $('networkName').value.trim(), cidr: $('networkCidr').value.trim(), zone: $('networkZone').value.trim(), notes: $('networkNotes').value.trim() };
   const index = state.networks.findIndex((n) => n.id === id);
   index >= 0 ? state.networks.splice(index, 1, record) : state.networks.push(record);
-  event.target.reset(); $('networkId').value = ''; closeDialog('networkDialog'); saveState();
+  event.target.reset(); $('networkId').value = ''; closeDialog('networkDialog'); void saveState().catch(handleStorageError);
 });
 $('deviceForm').addEventListener('submit', (event) => {
   event.preventDefault();
@@ -96,12 +83,12 @@ $('deviceForm').addEventListener('submit', (event) => {
   const record = { id, networkId: $('deviceNetwork').value, name: $('deviceName').value.trim(), type: $('deviceType').value, ip: $('deviceIp').value.trim(), mac: $('deviceMac').value.trim().toUpperCase(), status: $('deviceStatus').value, location: $('deviceLocation').value.trim(), login: $('deviceLogin').value.trim(), password: $('devicePassword').value, staticIp: $('deviceStaticIp').checked, dhcp: $('deviceDhcp').checked, url: $('deviceUrl').value.trim(), notes: $('deviceNotes').value.trim() };
   const index = state.devices.findIndex((d) => d.id === id);
   index >= 0 ? state.devices.splice(index, 1, record) : state.devices.push(record);
-  event.target.reset(); $('deviceId').value = ''; closeDialog('deviceDialog'); saveState();
+  event.target.reset(); $('deviceId').value = ''; closeDialog('deviceDialog'); void saveState().catch(handleStorageError);
 });
 window.editNetwork = (id) => { const n = state.networks.find((item) => item.id === id); if (!n) return; $('networkId').value = n.id; $('networkName').value = n.name; $('networkCidr').value = n.cidr; $('networkZone').value = n.zone; $('networkNotes').value = n.notes; openDialog('networkDialog'); };
-window.deleteNetwork = (id) => { if (state.devices.some((d) => d.networkId === id)) { alert('Supprimez ou déplacez d’abord les périphériques de ce réseau.'); return; } if (confirm('Supprimer ce réseau ?')) { state.networks = state.networks.filter((n) => n.id !== id); saveState(); } };
+window.deleteNetwork = (id) => { if (state.devices.some((d) => d.networkId === id)) { alert('Supprimez ou déplacez d’abord les périphériques de ce réseau.'); return; } if (confirm('Supprimer ce réseau ?')) { state.networks = state.networks.filter((n) => n.id !== id); void saveState().catch(handleStorageError); } };
 window.editDevice = (id) => { const d = state.devices.find((item) => item.id === id); if (!d) return; $('deviceId').value = d.id; $('deviceNetwork').value = d.networkId; $('deviceName').value = d.name; $('deviceType').value = d.type; $('deviceIp').value = d.ip || ''; $('deviceMac').value = d.mac || ''; $('deviceStatus').value = d.status; $('deviceLocation').value = d.location || ''; $('deviceLogin').value = d.login || ''; $('devicePassword').value = d.password || ''; $('deviceStaticIp').checked = Boolean(d.staticIp); $('deviceDhcp').checked = Boolean(d.dhcp); $('deviceUrl').value = d.url || ''; $('deviceNotes').value = d.notes || ''; openDialog('deviceDialog'); };
-window.deleteDevice = (id) => { if (confirm('Supprimer ce périphérique ?')) { state.devices = state.devices.filter((d) => d.id !== id); saveState(); } };
+window.deleteDevice = (id) => { if (confirm('Supprimer ce périphérique ?')) { state.devices = state.devices.filter((d) => d.id !== id); void saveState().catch(handleStorageError); } };
 function openDialog(id) { $(id).showModal(); }
 function closeDialog(id) { $(id).close(); }
 $('openNetworkModal').onclick = () => { $('networkForm').reset(); $('networkId').value = ''; openDialog('networkDialog'); };
@@ -118,7 +105,6 @@ applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
 ['searchInput','networkFilter','typeFilter','sortSelect'].forEach((id) => $(id).addEventListener('input', renderInventory));
 $('tileView').onclick = () => { viewMode = 'tiles'; $('tileView').classList.add('active'); $('listView').classList.remove('active'); renderInventory(); };
 $('listView').onclick = () => { viewMode = 'list'; $('listView').classList.add('active'); $('tileView').classList.remove('active'); renderInventory(); };
-$('seedDemo').onclick = seedDemoData;
 $('exportData').onclick = () => { const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'nethome-manager.json' }); a.click(); URL.revokeObjectURL(a.href); };
-$('importData').onchange = async (event) => { const file = event.target.files[0]; if (!file) return; const imported = JSON.parse(await file.text()); state.networks = imported.networks || []; state.devices = imported.devices || []; saveState(); };
-render();
+$('importData').onchange = async (event) => { const file = event.target.files[0]; if (!file) return; const imported = JSON.parse(await file.text()); state.networks = imported.networks || []; state.devices = imported.devices || []; void saveState().catch(handleStorageError); };
+loadState().then(render).catch(handleStorageError);

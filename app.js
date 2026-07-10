@@ -1,5 +1,6 @@
 const API_URL = '/api/data';
 const THEME_KEY = 'nethome-manager-theme';
+const TABLE_LAYOUT_KEY = 'nethome-manager-table-layout';
 const state = { networks: [], devices: [] };
 let viewMode = 'tiles';
 
@@ -32,6 +33,30 @@ function ipValue(ip) { return (ip || '').split('.').reduce((acc, part) => (acc *
 function statusClass(status) { return `status-${normalize(status).replace(/[^a-z0-9]+/g, '-')}`; }
 function ipModeValue(device) { if (device.ipMode) return device.ipMode; if (device.staticIp) return 'fixed'; if (device.dhcp) return 'dhcp'; return 'none'; }
 function ipModeLabel(device) { return { none: 'Non défini', fixed: 'IP Fixe', dhcp: 'DHCP', reservation: 'Statique (Réservation DHCP)' }[ipModeValue(device)] || 'Non défini'; }
+function actionButtons(d) { return `<button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button> <button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button>`; }
+const TABLE_COLUMNS = [
+  { key: 'name', label: 'Nom', width: 150, cell: (d) => `<strong>${d.name}</strong>`, className: 'name-cell' },
+  { key: 'network', label: 'Réseau', width: 150, cell: (d) => networkName(d.networkId) },
+  { key: 'type', label: 'Type', width: 140, cell: (d) => d.type || '-' },
+  { key: 'addressing', label: 'Adressage', width: 190, cell: (d) => ipModeLabel(d) },
+  { key: 'ip', label: 'IP', width: 130, cell: (d) => d.ip || '-' },
+  { key: 'mac', label: 'MAC', width: 160, cell: (d) => d.mac || '-' },
+  { key: 'login', label: 'Login', width: 120, cell: (d) => d.login || '-' },
+  { key: 'password', label: 'Mot de passe', width: 140, cell: (d) => d.password || '-' },
+  { key: 'url', label: 'URL', width: 120, cell: (d) => d.url ? `<a href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Gestion</a>` : '-' },
+  { key: 'status', label: 'Statut', width: 110, cell: (d) => `<span class="badge ${statusClass(d.status)}">${d.status}</span>` },
+  { key: 'actions', label: 'Actions', width: 170, cell: actionButtons }
+];
+let tableLayout = loadTableLayout();
+function loadTableLayout() {
+  const defaults = { order: TABLE_COLUMNS.map((column) => column.key), widths: Object.fromEntries(TABLE_COLUMNS.map((column) => [column.key, column.width])) };
+  try {
+    const saved = JSON.parse(localStorage.getItem(TABLE_LAYOUT_KEY)) || {};
+    return { order: Array.isArray(saved.order) ? [...saved.order.filter((key) => TABLE_COLUMNS.some((column) => column.key === key)), ...defaults.order.filter((key) => !saved.order?.includes(key))] : defaults.order, widths: { ...defaults.widths, ...(saved.widths || {}) } };
+  } catch { return defaults; }
+}
+function saveTableLayout() { localStorage.setItem(TABLE_LAYOUT_KEY, JSON.stringify(tableLayout)); }
+function orderedColumns() { return tableLayout.order.map((key) => TABLE_COLUMNS.find((column) => column.key === key)).filter(Boolean); }
 
 function render() { renderSelects(); renderInventory(); }
 function renderSelects() {
@@ -66,8 +91,11 @@ function renderCard(d) {
   return `<article class="device-card" role="button" tabindex="0" onclick="showDeviceDetails('${d.id}')" onkeydown="handleCardKey(event, '${d.id}')"><div class="card-top"><span class="badge">${networkName(d.networkId)}</span><span class="badge ${statusClass(d.status)}">${d.status}</span></div><h3>${d.name}</h3><p class="device-meta"><strong>${d.type}</strong> · ${d.location || 'emplacement non défini'}</p><dl class="mini-specs"><div><dt>IP</dt><dd>${d.ip || '-'}</dd></div><div><dt>Mode</dt><dd>${ipModeLabel(d)}</dd></div><div><dt>MAC</dt><dd>${d.mac || '-'}</dd></div><div><dt>Login</dt><dd>${d.login || '-'}</dd></div></dl>${d.url ? `<a class="manage-link" href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir l’interface de gestion</a>` : ''}${d.notes ? `<p class="notes">${d.notes}</p>` : ''}<div class="card-actions"><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button><button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></div></article>`;
 }
 function renderTable(devices) {
-  const rows = devices.map((d) => `<tr class="clickable-row" onclick="showDeviceDetails('${d.id}')"><td class="name-cell"><strong>${d.name}</strong></td><td>${networkName(d.networkId)}</td><td>${d.type}</td><td>${ipModeLabel(d)}</td><td>${d.ip || '-'}</td><td>${d.mac || '-'}</td><td>${d.login || '-'}</td><td>${d.password || '-'}</td><td>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Gestion</a>` : '-'}</td><td><span class="badge ${statusClass(d.status)}">${d.status}</span></td><td><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button> <button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></td></tr>`).join('');
-  return `<table><thead><tr><th>Nom</th><th>Réseau</th><th>Type</th><th>Adressage</th><th>IP</th><th>MAC</th><th>Login</th><th>Mot de passe</th><th>URL</th><th>Statut</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const columns = orderedColumns();
+  const colgroup = columns.map((column) => `<col style="width:${tableLayout.widths[column.key]}px">`).join('');
+  const headers = columns.map((column) => `<th draggable="true" data-column="${column.key}" ondragstart="handleColumnDragStart(event, '${column.key}')" ondragover="event.preventDefault()" ondrop="handleColumnDrop(event, '${column.key}')"><span>${column.label}</span><button class="column-resizer" aria-label="Redimensionner ${column.label}" onmousedown="startColumnResize(event, '${column.key}')"></button></th>`).join('');
+  const rows = devices.map((d) => `<tr class="clickable-row" onclick="showDeviceDetails('${d.id}')">${columns.map((column) => `<td class="${column.className || ''}">${column.cell(d)}</td>`).join('')}</tr>`).join('');
+  return `<table class="resizable-table"><colgroup>${colgroup}</colgroup><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 function emptyState() { return $('emptyStateTemplate').innerHTML; }
 
@@ -92,6 +120,9 @@ window.editNetwork = (id) => { const n = state.networks.find((item) => item.id =
 window.deleteNetwork = (id) => { if (state.devices.some((d) => d.networkId === id)) { alert('Supprimez ou déplacez d’abord les périphériques de ce réseau.'); return; } if (confirm('Supprimer ce réseau ?')) { state.networks = state.networks.filter((n) => n.id !== id); void saveState().catch(handleStorageError); } };
 window.editDevice = (id) => { const d = state.devices.find((item) => item.id === id); if (!d) return; $('deviceId').value = d.id; $('deviceNetwork').value = d.networkId; $('deviceName').value = d.name; $('deviceType').value = d.type; $('deviceIp').value = d.ip || ''; $('deviceMac').value = d.mac || ''; $('deviceStatus').value = d.status; $('deviceLocation').value = d.location || ''; $('deviceLogin').value = d.login || ''; $('devicePassword').value = d.password || ''; $('deviceIpMode').value = ipModeValue(d); $('deviceUrl').value = d.url || ''; $('deviceNotes').value = d.notes || ''; openDialog('deviceDialog'); };
 window.deleteDevice = (id) => { if (confirm('Supprimer ce périphérique ?')) { state.devices = state.devices.filter((d) => d.id !== id); void saveState().catch(handleStorageError); } };
+window.handleColumnDragStart = (event, key) => { event.dataTransfer.setData('text/plain', key); event.dataTransfer.effectAllowed = 'move'; };
+window.handleColumnDrop = (event, targetKey) => { event.preventDefault(); const sourceKey = event.dataTransfer.getData('text/plain'); if (!sourceKey || sourceKey === targetKey) return; const order = tableLayout.order.filter((key) => key !== sourceKey); order.splice(order.indexOf(targetKey), 0, sourceKey); tableLayout.order = order; saveTableLayout(); renderInventory(); };
+window.startColumnResize = (event, key) => { event.preventDefault(); event.stopPropagation(); const startX = event.clientX; const startWidth = tableLayout.widths[key] || 120; const onMove = (moveEvent) => { tableLayout.widths[key] = Math.max(80, startWidth + moveEvent.clientX - startX); renderInventory(); }; const onUp = () => { saveTableLayout(); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); };
 window.handleCardKey = (event, id) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showDeviceDetails(id); } };
 window.showDeviceDetails = (id) => { const d = state.devices.find((item) => item.id === id); if (!d) return; $('deviceDetails').innerHTML = renderDetails(d); openDialog('deviceDetailsDialog'); };
 function renderDetails(d) { const fields = [['Nom', d.name], ['Réseau', networkName(d.networkId)], ['Type', d.type], ['Statut', d.status], ['Emplacement', d.location], ['Adresse IP', d.ip], ['Mode IP', ipModeLabel(d)], ['Adresse MAC', d.mac], ['Login', d.login], ['Mot de passe', d.password], ['URL de gestion', d.url ? `<a href="${d.url}" target="_blank" rel="noopener">${d.url}</a>` : ''], ['Notes', d.notes]]; return fields.map(([label, value]) => `<div class="detail-row"><span>${label}</span><strong>${value || '-'}</strong></div>`).join(''); }

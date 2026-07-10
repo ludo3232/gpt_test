@@ -274,3 +274,25 @@ textarea { resize: vertical; }
   .theme-select, .toolbar-controls input { grid-column: auto; }
   .mini-specs { grid-template-columns: 1fr; }
 }
+
+.view-switch {
+  display: inline-flex;
+  gap: .45rem;
+  margin-top: .75rem;
+  padding: .25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 75%, transparent);
+}
+.view-switch .view-toggle { justify-self: auto; }
+.name-cell strong { font-weight: 800; }
+.toolbar-title h2 { margin-bottom: .35rem; }
+.hero-actions .secondary,
+.hero-actions .file-button,
+.hero-actions button,
+.hero-actions select { width: 100%; }
+
+@media (min-width: 1200px) {
+  .hero-actions { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+  .toolbar { grid-template-columns: minmax(280px, .45fr) minmax(560px, 1fr); }
+}

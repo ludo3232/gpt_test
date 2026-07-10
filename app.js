@@ -66,8 +66,8 @@ function renderCard(d) {
   return `<article class="device-card" role="button" tabindex="0" onclick="showDeviceDetails('${d.id}')" onkeydown="handleCardKey(event, '${d.id}')"><div class="card-top"><span class="badge">${networkName(d.networkId)}</span><span class="badge ${statusClass(d.status)}">${d.status}</span></div><h3>${d.name}</h3><p class="device-meta"><strong>${d.type}</strong> · ${d.location || 'emplacement non défini'}</p><dl class="mini-specs"><div><dt>IP</dt><dd>${d.ip || '-'}</dd></div><div><dt>Mode</dt><dd>${ipModeLabel(d)}</dd></div><div><dt>MAC</dt><dd>${d.mac || '-'}</dd></div><div><dt>Login</dt><dd>${d.login || '-'}</dd></div></dl>${d.url ? `<a class="manage-link" href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir l’interface de gestion</a>` : ''}${d.notes ? `<p class="notes">${d.notes}</p>` : ''}<div class="card-actions"><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button><button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></div></article>`;
 }
 function renderTable(devices) {
-  const rows = devices.map((d) => `<tr class="clickable-row" onclick="showDeviceDetails('${d.id}')"><td>${d.name}</td><td>${networkName(d.networkId)}</td><td>${d.type}</td><td>${d.ip || '-'}</td><td>${d.mac || '-'}</td><td>${d.login || '-'}</td><td>${d.password || '-'}</td><td>${ipModeLabel(d)}</td><td>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Gestion</a>` : '-'}</td><td><span class="badge ${statusClass(d.status)}">${d.status}</span></td><td><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button> <button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></td></tr>`).join('');
-  return `<table><thead><tr><th>Nom</th><th>Réseau</th><th>Type</th><th>IP</th><th>MAC</th><th>Login</th><th>Mot de passe</th><th>Adressage</th><th>URL</th><th>Statut</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const rows = devices.map((d) => `<tr class="clickable-row" onclick="showDeviceDetails('${d.id}')"><td class="name-cell"><strong>${d.name}</strong></td><td>${networkName(d.networkId)}</td><td>${d.type}</td><td>${ipModeLabel(d)}</td><td>${d.ip || '-'}</td><td>${d.mac || '-'}</td><td>${d.login || '-'}</td><td>${d.password || '-'}</td><td>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Gestion</a>` : '-'}</td><td><span class="badge ${statusClass(d.status)}">${d.status}</span></td><td><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button> <button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></td></tr>`).join('');
+  return `<table><thead><tr><th>Nom</th><th>Réseau</th><th>Type</th><th>Adressage</th><th>IP</th><th>MAC</th><th>Login</th><th>Mot de passe</th><th>URL</th><th>Statut</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function emptyState() { return $('emptyStateTemplate').innerHTML; }
 
@@ -112,6 +112,90 @@ applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
 ['searchInput','networkFilter','typeFilter','sortSelect'].forEach((id) => $(id).addEventListener('input', renderInventory));
 $('tileView').onclick = () => { viewMode = 'tiles'; $('tileView').classList.add('active'); $('listView').classList.remove('active'); renderInventory(); };
 $('listView').onclick = () => { viewMode = 'list'; $('listView').classList.add('active'); $('tileView').classList.remove('active'); renderInventory(); };
-$('exportData').onclick = () => { const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'nethome-manager.json' }); a.click(); URL.revokeObjectURL(a.href); };
+$('exportData').onclick = () => downloadBlob(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), 'nethome-manager.json');
 $('importData').onchange = async (event) => { const file = event.target.files[0]; if (!file) return; const imported = JSON.parse(await file.text()); state.networks = imported.networks || []; state.devices = imported.devices || []; void saveState().catch(handleStorageError); };
+$('exportXlsx').onclick = exportXlsx;
+$('importXlsx').onchange = (event) => { const file = event.target.files[0]; if (file) void importXlsx(file).catch(handleStorageError); };
+
+function downloadBlob(blob, filename) {
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function xmlEscape(value) { return String(value ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+function xmlUnescape(value) { return String(value ?? '').replace(/&quot;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&'); }
+function cellRef(column, row) { let name = ''; let n = column + 1; while (n) { const r = (n - 1) % 26; name = String.fromCharCode(65 + r) + name; n = Math.floor((n - 1) / 26); } return `${name}${row}`; }
+function worksheetXml(headers, rows) {
+  const allRows = [headers, ...rows];
+  const xmlRows = allRows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => `<c r="${cellRef(columnIndex, rowIndex + 1)}" t="inlineStr"><is><t>${xmlEscape(value)}</t></is></c>`).join('')}</row>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${xmlRows}</sheetData></worksheet>`;
+}
+function xlsxFiles() {
+  const networkHeaders = ['id', 'name', 'cidr', 'zone', 'notes'];
+  const deviceHeaders = ['id', 'networkId', 'name', 'type', 'ipMode', 'ip', 'mac', 'status', 'location', 'login', 'password', 'url', 'notes'];
+  const networkRows = state.networks.map((n) => networkHeaders.map((key) => n[key] || ''));
+  const deviceRows = state.devices.map((d) => deviceHeaders.map((key) => key === 'ipMode' ? ipModeValue(d) : d[key] || ''));
+  return {
+    '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
+    '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Networks" sheetId="1" r:id="rId1"/><sheet name="Devices" sheetId="2" r:id="rId2"/></sheets></workbook>',
+    'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>',
+    'xl/worksheets/sheet1.xml': worksheetXml(networkHeaders, networkRows),
+    'xl/worksheets/sheet2.xml': worksheetXml(deviceHeaders, deviceRows)
+  };
+}
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+function crc32(bytes) { let c = 0xffffffff; for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function u16(value) { return [value & 255, value >> 8 & 255]; }
+function u32(value) { return [value & 255, value >> 8 & 255, value >> 16 & 255, value >> 24 & 255]; }
+function zipStore(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  for (const [name, content] of Object.entries(files)) {
+    const nameBytes = encoder.encode(name);
+    const data = encoder.encode(content);
+    const crc = crc32(data);
+    const local = new Uint8Array([0x50,0x4b,0x03,0x04, ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nameBytes.length), ...u16(0), ...nameBytes, ...data]);
+    const central = new Uint8Array([0x50,0x4b,0x01,0x02, ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nameBytes.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset), ...nameBytes]);
+    localParts.push(local); centralParts.push(central); offset += local.length;
+  }
+  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+  const end = new Uint8Array([0x50,0x4b,0x05,0x06, ...u16(0), ...u16(0), ...u16(centralParts.length), ...u16(centralParts.length), ...u32(centralSize), ...u32(offset), ...u16(0)]);
+  return new Blob([...localParts, ...centralParts, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+function exportXlsx() { downloadBlob(zipStore(xlsxFiles()), 'nethome-manager.xlsx'); }
+function parseWorksheet(xml) {
+  return [...xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].map((row) => [...row[1].matchAll(/<c[^>]*>[\s\S]*?<t[^>]*>([\s\S]*?)<\/t>[\s\S]*?<\/c>/g)].map((cell) => xmlUnescape(cell[1])));
+}
+function unzipStore(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const decoder = new TextDecoder();
+  const files = {};
+  let offset = 0;
+  while (offset < bytes.length - 4) {
+    if (bytes[offset] !== 0x50 || bytes[offset + 1] !== 0x4b || bytes[offset + 2] !== 0x03 || bytes[offset + 3] !== 0x04) break;
+    const method = bytes[offset + 8] | (bytes[offset + 9] << 8);
+    if (method !== 0) throw new Error('Seuls les XLSX exportés par cette application peuvent être importés.');
+    const size = bytes[offset + 18] | (bytes[offset + 19] << 8) | (bytes[offset + 20] << 16) | (bytes[offset + 21] << 24);
+    const nameLength = bytes[offset + 26] | (bytes[offset + 27] << 8);
+    const extraLength = bytes[offset + 28] | (bytes[offset + 29] << 8);
+    const name = decoder.decode(bytes.slice(offset + 30, offset + 30 + nameLength));
+    const dataStart = offset + 30 + nameLength + extraLength;
+    files[name] = decoder.decode(bytes.slice(dataStart, dataStart + size));
+    offset = dataStart + size;
+  }
+  return files;
+}
+async function importXlsx(file) {
+  const files = unzipStore(await file.arrayBuffer());
+  const networkRows = parseWorksheet(files['xl/worksheets/sheet1.xml'] || '');
+  const deviceRows = parseWorksheet(files['xl/worksheets/sheet2.xml'] || '');
+  const toObjects = (rows) => rows.slice(1).map((row) => Object.fromEntries((rows[0] || []).map((key, index) => [key, row[index] || ''])));
+  state.networks = toObjects(networkRows).filter((n) => n.id || n.name).map((n) => ({ id: n.id || uid(), name: n.name || '', cidr: n.cidr || '', zone: n.zone || '', notes: n.notes || '' }));
+  state.devices = toObjects(deviceRows).filter((d) => d.id || d.name).map((d) => ({ id: d.id || uid(), networkId: d.networkId || '', name: d.name || '', type: d.type || '', ipMode: d.ipMode || 'none', staticIp: d.ipMode === 'fixed', dhcp: d.ipMode === 'dhcp', ip: d.ip || '', mac: d.mac || '', status: d.status || 'Actif', location: d.location || '', login: d.login || '', password: d.password || '', url: d.url || '', notes: d.notes || '' }));
+  await saveState();
+}
+
 loadState().then(render).catch(handleStorageError);

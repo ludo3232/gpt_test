@@ -15,6 +15,8 @@
     <div class="hero-actions">
       <button id="exportData" class="secondary">Exporter JSON</button>
       <label class="secondary file-button">Importer JSON<input id="importData" type="file" accept="application/json"></label>
+      <button id="exportXlsx" class="secondary">Exporter XLSX</button>
+      <label class="secondary file-button">Importer XLSX<input id="importXlsx" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>
       <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option><option value="slate">Thème ardoise</option><option value="sunset">Thème coucher de soleil</option><option value="ocean">Thème océan</option><option value="highcontrast">Contraste élevé</option></select>
       <button id="openNetworkModal">+ Réseau</button>
       <button id="openDeviceModal">+ Appareil</button>
@@ -24,17 +26,19 @@
   <main class="layout">
     <section class="panel inventory-panel">
       <div class="toolbar">
-        <div>
+        <div class="toolbar-title">
           <h2>Inventaire</h2>
-          <p>Filtrez, triez et basculez entre tuiles et liste.</p>
+          <p>Filtrez et triez votre inventaire.</p>
+          <div class="view-switch" aria-label="Mode d’affichage">
+            <button id="tileView" class="view-toggle active">Tuiles</button>
+            <button id="listView" class="view-toggle">Liste</button>
+          </div>
         </div>
         <div class="toolbar-controls">
           <input id="searchInput" type="search" placeholder="Rechercher nom, IP, MAC, notes...">
           <select id="networkFilter"><option value="all">Tous les réseaux</option></select>
           <select id="typeFilter"><option value="all">Tous les types</option></select>
           <select id="sortSelect"><option value="name">Tri: nom</option><option value="ip">Tri: adresse IP</option><option value="type">Tri: type</option><option value="network">Tri: réseau</option><option value="status">Tri: statut</option></select>
-          <button id="tileView" class="view-toggle active">Tuiles</button>
-          <button id="listView" class="view-toggle">Liste</button>
         </div>
       </div>
       <div id="inventory" class="cards"></div>

@@ -17,7 +17,7 @@
       <label class="secondary file-button">Importer JSON<input id="importData" type="file" accept="application/json"></label>
       <button id="exportXlsx" class="secondary">Exporter XLSX</button>
       <label class="secondary file-button">Importer XLSX<input id="importXlsx" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>
-      <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="ocean">Océan classique</option><option value="ocean-deep">Océan profond</option><option value="ocean-lagoon">Océan lagon</option><option value="ocean-night">Océan nuit</option></select>
+      <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="ocean">Océan classique</option><option value="ocean-deep">Océan profond</option><option value="ocean-lagoon">Océan lagon</option><option value="ocean-night">Océan nuit</option><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option><option value="slate">Thème ardoise</option><option value="sunset">Thème coucher de soleil</option><option value="highcontrast">Contraste élevé</option></select>
       <button id="openNetworkModal">+ Réseau</button>
       <button id="openDeviceModal">+ Appareil</button>
     </div>
@@ -39,7 +39,6 @@
           <select id="networkFilter"><option value="all">Tous les réseaux</option></select>
           <select id="typeFilter"><option value="all">Tous les types</option></select>
           <select id="sortSelect"><option value="name">Tri: nom</option><option value="ip">Tri: adresse IP</option><option value="type">Tri: type</option><option value="network">Tri: réseau</option><option value="status">Tri: statut</option></select>
-          <button id="resetColumns" class="secondary" type="button">Réinitialiser colonnes</button>
         </div>
       </div>
       <div id="inventory" class="cards"></div>

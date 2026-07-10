@@ -297,37 +297,22 @@ textarea { resize: vertical; }
   .toolbar { grid-template-columns: minmax(280px, .45fr) minmax(560px, 1fr); }
 }
 
-.resizable-table {
-  table-layout: fixed;
-  min-width: max-content;
-}
-.resizable-table th {
-  position: relative;
-  user-select: none;
-  cursor: grab;
-  vertical-align: middle;
-}
-.resizable-table th:active { cursor: grabbing; }
-.resizable-table th span { display: inline-block; padding-right: .75rem; }
-.column-resizer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 8px;
-  height: 100%;
+.sortable-table th { white-space: nowrap; }
+.sortable-header {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  width: 100%;
   padding: 0;
   border: 0;
-  border-radius: 0;
   background: transparent;
-  cursor: col-resize;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
-.column-resizer:hover,
-.column-resizer:focus-visible { background: color-mix(in srgb, var(--brand) 45%, transparent); outline: none; }
-.resizable-table td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.name-cell strong { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.sortable-header:hover,
+.sortable-header:focus-visible { color: var(--accent); outline: none; }
+.sortable-table td { overflow-wrap: anywhere; }
 
 body[data-theme="ocean-deep"] {
   --bg: #031b2d;
@@ -371,4 +356,3 @@ body[data-theme="ocean-night"] {
   --input: #010817;
 }
 
-#resetColumns { justify-self: start; }

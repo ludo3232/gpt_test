@@ -16,6 +16,9 @@
     <div class="hero-actions">
       <button id="exportData" class="secondary">Exporter JSON</button>
       <label class="secondary file-button">Importer JSON<input id="importData" type="file" accept="application/json"></label>
+      <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option></select>
+      <button id="openNetworkModal">+ Réseau</button>
+      <button id="openDeviceModal">+ Appareil</button>
       <button id="seedDemo">Charger un exemple</button>
     </div>
   </header>
@@ -28,44 +31,6 @@
         <h3>Vue d'ensemble</h3>
         <div id="overviewList" class="overview-list"></div>
       </div>
-    </section>
-
-    <section class="panel form-panel" aria-labelledby="network-form-title">
-      <h2 id="network-form-title">Ajouter / éditer un réseau</h2>
-      <form id="networkForm" class="stacked-form">
-        <input type="hidden" id="networkId">
-        <label>Nom du réseau<input id="networkName" required placeholder="LAN Maison"></label>
-        <label>CIDR / plage IP<input id="networkCidr" required placeholder="192.168.1.0/24"></label>
-        <label>Usage / zone<input id="networkZone" placeholder="Production, Invités, IoT..."></label>
-        <label>Notes<textarea id="networkNotes" rows="3" placeholder="Routeur, DHCP, contraintes..."></textarea></label>
-        <div class="form-actions">
-          <button type="submit">Enregistrer le réseau</button>
-          <button type="button" id="resetNetwork" class="secondary">Réinitialiser</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="panel form-panel" aria-labelledby="device-form-title">
-      <h2 id="device-form-title">Ajouter / éditer un périphérique</h2>
-      <form id="deviceForm" class="stacked-form">
-        <input type="hidden" id="deviceId">
-        <label>Réseau<select id="deviceNetwork" required></select></label>
-        <label>Nom<input id="deviceName" required placeholder="NAS, Switch bureau..."></label>
-        <label>Type<select id="deviceType"><option>Serveur</option><option>Routeur</option><option>Switch</option><option>Point d'accès</option><option>Ordinateur</option><option>Mobile</option><option>IoT</option><option>Imprimante</option><option>Autre</option></select></label>
-        <div class="two-cols">
-          <label>Adresse IP<input id="deviceIp" placeholder="192.168.1.10"></label>
-          <label>Adresse MAC<input id="deviceMac" placeholder="AA:BB:CC:DD:EE:FF"></label>
-        </div>
-        <div class="two-cols">
-          <label>Statut<select id="deviceStatus"><option>Actif</option><option>À vérifier</option><option>Éteint</option><option>Réservé</option></select></label>
-          <label>Emplacement<input id="deviceLocation" placeholder="Baie, salon, bureau..."></label>
-        </div>
-        <label>Notes<textarea id="deviceNotes" rows="3" placeholder="Ports, services, mots-clés..."></textarea></label>
-        <div class="form-actions">
-          <button type="submit">Enregistrer le périphérique</button>
-          <button type="button" id="resetDevice" class="secondary">Réinitialiser</button>
-        </div>
-      </form>
     </section>
 
     <section class="panel inventory-panel">
@@ -86,6 +51,52 @@
       <div id="inventory" class="cards"></div>
     </section>
   </main>
+
+    <dialog id="networkDialog" class="modal"><section class="panel form-panel" aria-labelledby="network-form-title">
+      <h2 id="network-form-title">Ajouter / éditer un réseau</h2>
+      <form id="networkForm" class="stacked-form">
+        <input type="hidden" id="networkId">
+        <label>Nom du réseau<input id="networkName" required placeholder="LAN Maison"></label>
+        <label>CIDR / plage IP<input id="networkCidr" required placeholder="192.168.1.0/24"></label>
+        <label>Usage / zone<input id="networkZone" placeholder="Production, Invités, IoT..."></label>
+        <label>Notes<textarea id="networkNotes" rows="3" placeholder="Routeur, DHCP, contraintes..."></textarea></label>
+        <div class="form-actions">
+          <button type="submit">Enregistrer le réseau</button>
+          <button type="button" id="resetNetwork" class="secondary">Réinitialiser</button>
+          <button type="button" id="closeNetworkModal" class="secondary">Fermer</button>
+        </div>
+      </form>
+    </section></dialog>
+
+  <dialog id="deviceDialog" class="modal"><section class="panel form-panel" aria-labelledby="device-form-title">
+      <h2 id="device-form-title">Ajouter / éditer un périphérique</h2>
+      <form id="deviceForm" class="stacked-form">
+        <input type="hidden" id="deviceId">
+        <label>Réseau<select id="deviceNetwork" required></select></label>
+        <label>Nom<input id="deviceName" required placeholder="NAS, Switch bureau..."></label>
+        <label>Type<select id="deviceType"><option>Serveur</option><option>Routeur</option><option>Switch</option><option>Point d'accès</option><option>Ordinateur</option><option>Mobile</option><option>IoT</option><option>Imprimante</option><option>Autre</option></select></label>
+        <div class="two-cols">
+          <label>Adresse IP<input id="deviceIp" inputmode="numeric" maxlength="15" pattern="^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$" placeholder="192.168.1.10"></label>
+          <label>Adresse MAC<input id="deviceMac" maxlength="17" pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$" placeholder="AA:BB:CC:DD:EE:FF"></label>
+        </div>
+        <div class="two-cols">
+          <label>Statut<select id="deviceStatus"><option>Actif</option><option>À vérifier</option><option>Éteint</option><option>Réservé</option></select></label>
+          <label>Emplacement<input id="deviceLocation" placeholder="Baie, salon, bureau..."></label>
+        </div>
+        <div class="two-cols">
+          <label>Login<input id="deviceLogin" autocomplete="off" placeholder="admin, root..."></label>
+          <label>Mot de passe en clair<input id="devicePassword" type="text" autocomplete="off" placeholder="Mot de passe visible"></label>
+        </div>
+        <fieldset class="checkbox-row"><legend>Adressage</legend><label><input id="deviceStaticIp" type="checkbox"> IP Fixe</label><label><input id="deviceDhcp" type="checkbox"> DHCP</label></fieldset>
+        <label>URL de gestion<input id="deviceUrl" type="url" placeholder="https://192.168.1.1"></label>
+        <label>Notes<textarea id="deviceNotes" rows="3" placeholder="Ports, services, mots-clés..."></textarea></label>
+        <div class="form-actions">
+          <button type="submit">Enregistrer le périphérique</button>
+          <button type="button" id="resetDevice" class="secondary">Réinitialiser</button>
+          <button type="button" id="closeDeviceModal" class="secondary">Fermer</button>
+        </div>
+      </form>
+    </section></dialog>
 
   <template id="emptyStateTemplate"><div class="empty-state">Aucun élément à afficher. Ajoutez un réseau puis des périphériques, ou chargez l'exemple.</div></template>
   <script src="app.js"></script>

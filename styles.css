@@ -207,3 +207,70 @@ textarea { resize: vertical; }
   .toolbar-controls { margin-top: .75rem; }
   .hero-actions { justify-content: flex-start; }
 }
+
+/* Layout refinements */
+.hero { align-items: flex-end; }
+.hero-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, auto));
+  align-items: center;
+  min-width: min(560px, 100%);
+}
+.theme-select { grid-column: 1 / -1; }
+.inventory-panel { display: grid; gap: 1rem; }
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr);
+  align-items: start;
+}
+.toolbar-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.toolbar-controls input,
+.toolbar-controls select { min-width: 0; }
+.toolbar-controls input { grid-column: 1 / -1; }
+.view-toggle { justify-self: start; }
+.cards { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+.device-card {
+  cursor: pointer;
+  display: grid;
+  gap: .55rem;
+  border-color: color-mix(in srgb, var(--brand) 65%, var(--border));
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.device-card:hover,
+.device-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+  outline: none;
+}
+.card-top { display: flex; justify-content: space-between; gap: .5rem; align-items: center; }
+.device-meta, .notes { margin: 0; }
+.mini-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .45rem .75rem;
+  margin: 0;
+}
+.mini-specs div { min-width: 0; }
+.mini-specs dt { color: var(--muted); font-size: .85em; }
+.mini-specs dd { margin: .1rem 0 0; overflow-wrap: anywhere; }
+.manage-link { width: fit-content; }
+.clickable-row { cursor: pointer; }
+.clickable-row:hover { background: color-mix(in srgb, var(--brand) 12%, var(--card)); }
+.details-panel { width: min(820px, 92vw); }
+.details-header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: .75rem; }
+.details-header h2 { margin: 0; }
+.details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.detail-row { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: .75rem; }
+.detail-row span { display: block; color: var(--muted); margin-bottom: .25rem; }
+.detail-row strong { display: block; overflow-wrap: anywhere; }
+.detail-row:last-child { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+  .hero-actions, .toolbar, .toolbar-controls, .details-grid { grid-template-columns: 1fr; }
+  .theme-select, .toolbar-controls input { grid-column: auto; }
+  .mini-specs { grid-template-columns: 1fr; }
+}

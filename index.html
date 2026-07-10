@@ -63,7 +63,7 @@
         <input type="hidden" id="deviceId">
         <label>Réseau<select id="deviceNetwork" required></select></label>
         <label>Nom<input id="deviceName" required placeholder="NAS, Switch bureau..."></label>
-        <label>Type<select id="deviceType"><option>Serveur</option><option>Routeur</option><option>Switch</option><option>Point d'accès</option><option>Ordinateur</option><option>Mobile</option><option>IoT</option><option>Imprimante</option><option>Autre</option></select></label>
+        <label>Type<select id="deviceType"><option>Serveur</option><option>Routeur</option><option>Switch</option><option>Point d'accès</option><option>Proxmox VE</option><option>Caméra LAN</option><option>Machine virtuelle</option><option>Shelly</option><option>Gateway</option><option>Ordinateur</option><option>Mobile</option><option>IoT</option><option>Imprimante</option><option>Autre</option></select></label>
         <div class="two-cols">
           <label>Adresse IP<input id="deviceIp" inputmode="numeric" maxlength="15" pattern="^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$" placeholder="192.168.1.10"></label>
           <label>Adresse MAC<input id="deviceMac" maxlength="17" pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$" placeholder="AA:BB:CC:DD:EE:FF"></label>
@@ -76,7 +76,7 @@
           <label>Login<input id="deviceLogin" autocomplete="off" placeholder="admin, root..."></label>
           <label>Mot de passe en clair<input id="devicePassword" type="text" autocomplete="off" placeholder="Mot de passe visible"></label>
         </div>
-        <fieldset class="checkbox-row"><legend>Adressage</legend><label><input id="deviceStaticIp" type="checkbox"> IP Fixe</label><label><input id="deviceDhcp" type="checkbox"> DHCP</label></fieldset>
+        <label>Mode IP<select id="deviceIpMode"><option value="none">Non défini</option><option value="fixed">IP Fixe</option><option value="dhcp">DHCP</option><option value="reservation">Statique (Réservation DHCP)</option></select></label>
         <label>URL de gestion<input id="deviceUrl" type="url" placeholder="https://192.168.1.1"></label>
         <label>Notes<textarea id="deviceNotes" rows="3" placeholder="Ports, services, mots-clés..."></textarea></label>
         <div class="form-actions">
@@ -86,6 +86,14 @@
         </div>
       </form>
     </section></dialog>
+
+  <dialog id="deviceDetailsDialog" class="modal"><section class="panel form-panel details-panel" aria-labelledby="device-details-title">
+    <div class="details-header">
+      <h2 id="device-details-title">Fiche périphérique</h2>
+      <button type="button" id="closeDetailsModal" class="secondary">Fermer</button>
+    </div>
+    <div id="deviceDetails" class="details-grid"></div>
+  </section></dialog>
 
   <template id="emptyStateTemplate"><div class="empty-state">Aucun élément à afficher. Ajoutez un réseau puis des périphériques.</div></template>
   <script src="app.js"></script>

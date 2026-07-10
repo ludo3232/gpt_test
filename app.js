@@ -59,6 +59,13 @@ function renderSelects() {
   $('networkFilter').innerHTML = '<option value="all">Tous les réseaux</option>' + networkOptions;
   const types = [...new Set(state.devices.map((d) => d.type).filter(Boolean))].sort();
   $('typeFilter').innerHTML = '<option value="all">Tous les types</option>' + types.map((t) => `<option>${t}</option>`).join('');
+  renderNetworkManager();
+}
+function renderNetworkManager() {
+  $('networkManagerList').innerHTML = state.networks.map((n) => {
+    const count = state.devices.filter((d) => d.networkId === n.id).length;
+    return `<div class="network-manager-item"><div><strong>${n.name}</strong><span>${n.cidr} · ${n.zone || 'zone non définie'} · ${count} appareil(s)</span></div><div class="card-actions"><button type="button" onclick="editNetwork('${n.id}')">Éditer</button><button type="button" class="danger" onclick="deleteNetwork('${n.id}')">Supprimer</button></div></div>`;
+  }).join('') || '<div class="empty-state">Aucun réseau enregistré.</div>';
 }
 function filteredDevices() {
   const query = normalize($('searchInput').value);
@@ -99,7 +106,7 @@ $('networkForm').addEventListener('submit', (event) => {
   const record = { id, name: $('networkName').value.trim(), cidr: $('networkCidr').value.trim(), zone: $('networkZone').value.trim(), notes: $('networkNotes').value.trim() };
   const index = state.networks.findIndex((n) => n.id === id);
   index >= 0 ? state.networks.splice(index, 1, record) : state.networks.push(record);
-  event.target.reset(); $('networkId').value = ''; closeDialog('networkDialog'); void saveState().catch(handleStorageError);
+  event.target.reset(); $('networkId').value = ''; void saveState().catch(handleStorageError);
 });
 $('deviceForm').addEventListener('submit', (event) => {
   event.preventDefault();
@@ -118,7 +125,7 @@ window.sortTableBy = (key) => { tableSort = { key, direction: tableSort.key === 
 window.handleCardKey = (event, id) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showDeviceDetails(id); } };
 window.showDeviceDetails = (id) => { const d = state.devices.find((item) => item.id === id); if (!d) return; $('deviceDetails').innerHTML = renderDetails(d); openDialog('deviceDetailsDialog'); };
 function renderDetails(d) { const fields = [['Nom', d.name], ['Réseau', networkName(d.networkId)], ['Type', d.type], ['Statut', d.status], ['Emplacement', d.location], ['Adresse IP', d.ip], ['Mode IP', ipModeLabel(d)], ['Adresse MAC', d.mac], ['Login', d.login], ['Mot de passe', d.password], ['URL de gestion', d.url ? `<a href="${d.url}" target="_blank" rel="noopener">${d.url}</a>` : ''], ['Notes', d.notes]]; return fields.map(([label, value]) => `<div class="detail-row"><span>${label}</span><strong>${value || '-'}</strong></div>`).join(''); }
-function openDialog(id) { $(id).showModal(); }
+function openDialog(id) { if (!$(id).open) $(id).showModal(); }
 function closeDialog(id) { $(id).close(); }
 $('openNetworkModal').onclick = () => { $('networkForm').reset(); $('networkId').value = ''; openDialog('networkDialog'); };
 $('openDeviceModal').onclick = () => { $('deviceForm').reset(); $('deviceId').value = ''; openDialog('deviceDialog'); };
@@ -138,109 +145,25 @@ $('tileView').onclick = () => { viewMode = 'tiles'; $('tileView').classList.add(
 $('listView').onclick = () => { viewMode = 'list'; $('listView').classList.add('active'); $('tileView').classList.remove('active'); renderInventory(); };
 $('exportData').onclick = () => downloadBlob(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), 'nethome-manager.json');
 $('importData').onchange = async (event) => { const file = event.target.files[0]; if (!file) return; const imported = JSON.parse(await file.text()); state.networks = imported.networks || []; state.devices = imported.devices || []; void saveState().catch(handleStorageError); };
-$('exportXlsx').onclick = exportXlsx;
-$('importXlsx').onchange = (event) => { const file = event.target.files[0]; if (file) void importXlsx(file).catch(handleStorageError); };
+$('exportPdf').onclick = exportPdf;
 
 function downloadBlob(blob, filename) {
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
   a.click();
   URL.revokeObjectURL(a.href);
 }
-function xmlEscape(value) { return String(value ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
-function xmlUnescape(value) { return String(value ?? '').replace(/&quot;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&'); }
-function cellRef(column, row) { let name = ''; let n = column + 1; while (n) { const r = (n - 1) % 26; name = String.fromCharCode(65 + r) + name; n = Math.floor((n - 1) / 26); } return `${name}${row}`; }
-function worksheetXml(headers, rows) {
-  const allRows = [headers, ...rows];
-  const xmlRows = allRows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => `<c r="${cellRef(columnIndex, rowIndex + 1)}" t="inlineStr"><is><t>${xmlEscape(value)}</t></is></c>`).join('')}</row>`).join('');
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${xmlRows}</sheetData></worksheet>`;
-}
-function xlsxFiles() {
-  const networkHeaders = ['Nom', 'CIDR', 'Zone', 'Notes'];
-  const deviceHeaders = ['Réseau', 'Nom', 'Type', 'Mode IP', 'IP', 'MAC', 'Statut', 'Emplacement', 'Login', 'Mot de passe', 'URL', 'Notes'];
-  const networkRows = state.networks.map((n) => [n.name || '', n.cidr || '', n.zone || '', n.notes || '']);
-  const deviceRows = state.devices.map((d) => [networkName(d.networkId), d.name || '', d.type || '', ipModeLabel(d), d.ip || '', d.mac || '', d.status || '', d.location || '', d.login || '', d.password || '', d.url || '', d.notes || '']);
-  return {
-    '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
-    '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
-    'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Réseaux" sheetId="1" r:id="rId1"/><sheet name="Périphériques" sheetId="2" r:id="rId2"/></sheets></workbook>',
-    'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>',
-    'xl/worksheets/sheet1.xml': worksheetXml(networkHeaders, networkRows),
-    'xl/worksheets/sheet2.xml': worksheetXml(deviceHeaders, deviceRows)
-  };
-}
-const CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
-function crc32(bytes) { let c = 0xffffffff; for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
-function u16(value) { return [value & 255, value >> 8 & 255]; }
-function u32(value) { return [value & 255, value >> 8 & 255, value >> 16 & 255, value >> 24 & 255]; }
-function zipStore(files) {
-  const encoder = new TextEncoder();
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-  for (const [name, content] of Object.entries(files)) {
-    const nameBytes = encoder.encode(name);
-    const data = encoder.encode(content);
-    const crc = crc32(data);
-    const local = new Uint8Array([0x50,0x4b,0x03,0x04, ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nameBytes.length), ...u16(0), ...nameBytes, ...data]);
-    const central = new Uint8Array([0x50,0x4b,0x01,0x02, ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nameBytes.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset), ...nameBytes]);
-    localParts.push(local); centralParts.push(central); offset += local.length;
-  }
-  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
-  const end = new Uint8Array([0x50,0x4b,0x05,0x06, ...u16(0), ...u16(0), ...u16(centralParts.length), ...u16(centralParts.length), ...u32(centralSize), ...u32(offset), ...u16(0)]);
-  return new Blob([...localParts, ...centralParts, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-}
-function exportXlsx() { downloadBlob(zipStore(xlsxFiles()), 'nethome-manager.xlsx'); }
-function parseWorksheet(xml) {
-  return [...xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].map((row) => [...row[1].matchAll(/<c[^>]*>[\s\S]*?<t[^>]*>([\s\S]*?)<\/t>[\s\S]*?<\/c>/g)].map((cell) => xmlUnescape(cell[1])));
-}
-async function unzipStore(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const decoder = new TextDecoder();
-  const files = {};
-  let offset = 0;
-  while (offset < bytes.length - 4) {
-    if (bytes[offset] !== 0x50 || bytes[offset + 1] !== 0x4b || bytes[offset + 2] !== 0x03 || bytes[offset + 3] !== 0x04) break;
-    const method = bytes[offset + 8] | (bytes[offset + 9] << 8);
-    const compressedSize = bytes[offset + 18] | (bytes[offset + 19] << 8) | (bytes[offset + 20] << 16) | (bytes[offset + 21] << 24);
-    const nameLength = bytes[offset + 26] | (bytes[offset + 27] << 8);
-    const extraLength = bytes[offset + 28] | (bytes[offset + 29] << 8);
-    const name = decoder.decode(bytes.slice(offset + 30, offset + 30 + nameLength));
-    const dataStart = offset + 30 + nameLength + extraLength;
-    const compressed = bytes.slice(dataStart, dataStart + compressedSize);
-    if (method === 0) {
-      files[name] = decoder.decode(compressed);
-    } else if (method === 8 && 'DecompressionStream' in window) {
-      files[name] = await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
-    } else if (method === 8) {
-      throw new Error('Import XLSX compressé non supporté par ce navigateur. Essayez avec un navigateur récent.');
-    } else {
-      throw new Error('Format XLSX non supporté.');
-    }
-    offset = dataStart + compressedSize;
-  }
-  return files;
-}
-function ipModeFromLabel(label) {
-  const normalized = normalize(label);
-  if (normalized.includes('reservation')) return 'reservation';
-  if (normalized.includes('dhcp')) return 'dhcp';
-  if (normalized.includes('fixe') || normalized.includes('fixed')) return 'fixed';
-  return 'none';
-}
-async function importXlsx(file) {
-  const files = await unzipStore(await file.arrayBuffer());
-  const networkRows = parseWorksheet(files['xl/worksheets/sheet1.xml'] || '');
-  const deviceRows = parseWorksheet(files['xl/worksheets/sheet2.xml'] || '');
-  const toObjects = (rows) => rows.slice(1).map((row) => Object.fromEntries((rows[0] || []).map((key, index) => [key, row[index] || ''])));
-  const importedNetworks = toObjects(networkRows).filter((n) => n.Nom || n.name).map((n) => ({ id: uid(), name: n.Nom || n.name || '', cidr: n.CIDR || n.cidr || '', zone: n.Zone || n.zone || '', notes: n.Notes || n.notes || '' }));
-  const networkIdsByName = new Map(importedNetworks.map((n) => [normalize(n.name), n.id]));
-  state.networks = importedNetworks;
-  state.devices = toObjects(deviceRows).filter((d) => d.Nom || d.name).map((d) => {
-    const networkNameFromSheet = d['Réseau'] || d.Reseau || d.network || '';
-    const ipMode = ipModeFromLabel(d['Mode IP'] || d.ipMode || '');
-    return { id: uid(), networkId: networkIdsByName.get(normalize(networkNameFromSheet)) || '', name: d.Nom || d.name || '', type: d.Type || d.type || '', ipMode, staticIp: ipMode === 'fixed', dhcp: ipMode === 'dhcp', ip: d.IP || d.ip || '', mac: d.MAC || d.mac || '', status: d.Statut || d.status || 'Actif', location: d.Emplacement || d.location || '', login: d.Login || d.login || '', password: d['Mot de passe'] || d.password || '', url: d.URL || d.url || '', notes: d.Notes || d.notes || '' };
-  });
-  await saveState();
+function printableValue(value) { return String(value ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+function exportPdf() {
+  const devices = sortDevicesForTable(filteredDevices());
+  const columns = TABLE_COLUMNS.filter((column) => column.key !== 'actions');
+  const rows = devices.map((d) => `<tr>${columns.map((column) => `<td>${printableValue(column.key === 'network' ? networkName(d.networkId) : column.key === 'addressing' ? ipModeLabel(d) : column.value(d) || '')}</td>`).join('')}</tr>`).join('');
+  const table = `<table><thead><tr>${columns.map((column) => `<th>${column.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+  const popup = window.open('', '_blank');
+  if (!popup) { alert('Autorisez les popups pour exporter en PDF.'); return; }
+  popup.document.write(`<!doctype html><html><head><title>Inventaire réseau</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-top:0}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #bbb;padding:6px;text-align:left;vertical-align:top}th{background:#e5f6fb}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Imprimer / enregistrer en PDF</button><h1>Inventaire réseau</h1>${table}</body></html>`);
+  popup.document.close();
+  popup.focus();
+  popup.print();
 }
 
 loadState().then(render).catch(handleStorageError);

@@ -15,8 +15,7 @@
     <div class="hero-actions">
       <button id="exportData" class="secondary">Exporter JSON</button>
       <label class="secondary file-button">Importer JSON<input id="importData" type="file" accept="application/json"></label>
-      <button id="exportXlsx" class="secondary">Exporter XLSX</button>
-      <label class="secondary file-button">Importer XLSX<input id="importXlsx" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>
+      <button id="exportPdf" class="secondary">Exporter PDF</button>
       <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="ocean">Océan classique</option><option value="ocean-deep">Océan profond</option><option value="ocean-lagoon">Océan lagon</option><option value="ocean-night">Océan nuit</option><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option><option value="slate">Thème ardoise</option><option value="sunset">Thème coucher de soleil</option><option value="highcontrast">Contraste élevé</option></select>
       <button id="openNetworkModal">+ Réseau</button>
       <button id="openDeviceModal">+ Appareil</button>
@@ -46,7 +45,7 @@
   </main>
 
     <dialog id="networkDialog" class="modal"><section class="panel form-panel" aria-labelledby="network-form-title">
-      <h2 id="network-form-title">Ajouter / éditer un réseau</h2>
+      <h2 id="network-form-title">Gérer les réseaux</h2>
       <form id="networkForm" class="stacked-form">
         <input type="hidden" id="networkId">
         <label>Nom du réseau<input id="networkName" required placeholder="LAN Maison"></label>
@@ -59,6 +58,10 @@
           <button type="button" id="closeNetworkModal" class="secondary">Fermer</button>
         </div>
       </form>
+      <div class="network-manager">
+        <h3>Réseaux existants</h3>
+        <div id="networkManagerList" class="network-manager-list"></div>
+      </div>
     </section></dialog>
 
   <dialog id="deviceDialog" class="modal"><section class="panel form-panel" aria-labelledby="device-form-title">

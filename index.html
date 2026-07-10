@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NetHome Manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Gestion réseau sans serveur applicatif</p>
+      <h1>NetHome Manager</h1>
+      <p class="lead">Inventoriez vos réseaux, VLAN et périphériques depuis une app statique hébergeable avec nginx. Les données restent dans le navigateur via localStorage.</p>
+    </div>
+    <div class="hero-actions">
+      <button id="exportData" class="secondary">Exporter JSON</button>
+      <label class="secondary file-button">Importer JSON<input id="importData" type="file" accept="application/json"></label>
+      <button id="seedDemo">Charger un exemple</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel summary-panel" aria-labelledby="summary-title">
+      <h2 id="summary-title">Résumé</h2>
+      <div id="summaryCards" class="summary-grid"></div>
+      <div class="overview">
+        <h3>Vue d'ensemble</h3>
+        <div id="overviewList" class="overview-list"></div>
+      </div>
+    </section>
+
+    <section class="panel form-panel" aria-labelledby="network-form-title">
+      <h2 id="network-form-title">Ajouter / éditer un réseau</h2>
+      <form id="networkForm" class="stacked-form">
+        <input type="hidden" id="networkId">
+        <label>Nom du réseau<input id="networkName" required placeholder="LAN Maison"></label>
+        <label>CIDR / plage IP<input id="networkCidr" required placeholder="192.168.1.0/24"></label>
+        <label>Usage / zone<input id="networkZone" placeholder="Production, Invités, IoT..."></label>
+        <label>Notes<textarea id="networkNotes" rows="3" placeholder="Routeur, DHCP, contraintes..."></textarea></label>
+        <div class="form-actions">
+          <button type="submit">Enregistrer le réseau</button>
+          <button type="button" id="resetNetwork" class="secondary">Réinitialiser</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel form-panel" aria-labelledby="device-form-title">
+      <h2 id="device-form-title">Ajouter / éditer un périphérique</h2>
+      <form id="deviceForm" class="stacked-form">
+        <input type="hidden" id="deviceId">
+        <label>Réseau<select id="deviceNetwork" required></select></label>
+        <label>Nom<input id="deviceName" required placeholder="NAS, Switch bureau..."></label>
+        <label>Type<select id="deviceType"><option>Serveur</option><option>Routeur</option><option>Switch</option><option>Point d'accès</option><option>Ordinateur</option><option>Mobile</option><option>IoT</option><option>Imprimante</option><option>Autre</option></select></label>
+        <div class="two-cols">
+          <label>Adresse IP<input id="deviceIp" placeholder="192.168.1.10"></label>
+          <label>Adresse MAC<input id="deviceMac" placeholder="AA:BB:CC:DD:EE:FF"></label>
+        </div>
+        <div class="two-cols">
+          <label>Statut<select id="deviceStatus"><option>Actif</option><option>À vérifier</option><option>Éteint</option><option>Réservé</option></select></label>
+          <label>Emplacement<input id="deviceLocation" placeholder="Baie, salon, bureau..."></label>
+        </div>
+        <label>Notes<textarea id="deviceNotes" rows="3" placeholder="Ports, services, mots-clés..."></textarea></label>
+        <div class="form-actions">
+          <button type="submit">Enregistrer le périphérique</button>
+          <button type="button" id="resetDevice" class="secondary">Réinitialiser</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel inventory-panel">
+      <div class="toolbar">
+        <div>
+          <h2>Inventaire</h2>
+          <p>Filtrez, triez et basculez entre tuiles et liste.</p>
+        </div>
+        <div class="toolbar-controls">
+          <input id="searchInput" type="search" placeholder="Rechercher nom, IP, MAC, notes...">
+          <select id="networkFilter"><option value="all">Tous les réseaux</option></select>
+          <select id="typeFilter"><option value="all">Tous les types</option></select>
+          <select id="sortSelect"><option value="name">Tri: nom</option><option value="ip">Tri: adresse IP</option><option value="type">Tri: type</option><option value="network">Tri: réseau</option><option value="status">Tri: statut</option></select>
+          <button id="tileView" class="view-toggle active">Tuiles</button>
+          <button id="listView" class="view-toggle">Liste</button>
+        </div>
+      </div>
+      <div id="inventory" class="cards"></div>
+    </section>
+  </main>
+
+  <template id="emptyStateTemplate"><div class="empty-state">Aucun élément à afficher. Ajoutez un réseau puis des périphériques, ou chargez l'exemple.</div></template>
+  <script src="app.js"></script>
+</body>
+</html>

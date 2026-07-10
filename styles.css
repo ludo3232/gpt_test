@@ -328,3 +328,47 @@ textarea { resize: vertical; }
   text-overflow: ellipsis;
 }
 .name-cell strong { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+
+body[data-theme="ocean-deep"] {
+  --bg: #031b2d;
+  --bg-2: #063a5b;
+  --panel: #071f32;
+  --muted: #9bd8f3;
+  --text: #f0fbff;
+  --brand: #38bdf8;
+  --accent: #14f1d9;
+  --danger: #fb7185;
+  --border: #0b6f92;
+  --card: #0a2d43;
+  --input: #041725;
+}
+
+body[data-theme="ocean-lagoon"] {
+  --bg: #064e5f;
+  --bg-2: #0f766e;
+  --panel: #083b4a;
+  --muted: #b5f5ec;
+  --text: #ecfeff;
+  --brand: #2dd4bf;
+  --accent: #67e8f9;
+  --danger: #f97373;
+  --border: #14b8a6;
+  --card: #0b4d5a;
+  --input: #062f3b;
+}
+
+body[data-theme="ocean-night"] {
+  --bg: #010b1a;
+  --bg-2: #082f49;
+  --panel: #020f20;
+  --muted: #7dd3fc;
+  --text: #e0f2fe;
+  --brand: #0ea5e9;
+  --accent: #22d3ee;
+  --danger: #e879f9;
+  --border: #075985;
+  --card: #06182c;
+  --input: #010817;
+}
+
+#resetColumns { justify-self: start; }

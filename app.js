@@ -48,15 +48,25 @@ const TABLE_COLUMNS = [
   { key: 'actions', label: 'Actions', width: 170, cell: actionButtons }
 ];
 let tableLayout = loadTableLayout();
-function loadTableLayout() {
-  const defaults = { order: TABLE_COLUMNS.map((column) => column.key), widths: Object.fromEntries(TABLE_COLUMNS.map((column) => [column.key, column.width])) };
-  try {
-    const saved = JSON.parse(localStorage.getItem(TABLE_LAYOUT_KEY)) || {};
-    return { order: Array.isArray(saved.order) ? [...saved.order.filter((key) => TABLE_COLUMNS.some((column) => column.key === key)), ...defaults.order.filter((key) => !saved.order?.includes(key))] : defaults.order, widths: { ...defaults.widths, ...(saved.widths || {}) } };
-  } catch { return defaults; }
+function defaultTableLayout() { return { order: TABLE_COLUMNS.map((column) => column.key), widths: Object.fromEntries(TABLE_COLUMNS.map((column) => [column.key, column.width])) }; }
+function normalizeTableLayout(layout = {}) {
+  const defaults = defaultTableLayout();
+  const validKeys = new Set(defaults.order);
+  const savedOrder = Array.isArray(layout.order) ? layout.order.filter((key, index, array) => validKeys.has(key) && array.indexOf(key) === index) : [];
+  const order = [...savedOrder, ...defaults.order.filter((key) => !savedOrder.includes(key))];
+  const widths = { ...defaults.widths };
+  for (const [key, value] of Object.entries(layout.widths || {})) {
+    if (validKeys.has(key) && Number.isFinite(Number(value))) widths[key] = Math.max(80, Number(value));
+  }
+  return { order, widths };
 }
-function saveTableLayout() { localStorage.setItem(TABLE_LAYOUT_KEY, JSON.stringify(tableLayout)); }
-function orderedColumns() { return tableLayout.order.map((key) => TABLE_COLUMNS.find((column) => column.key === key)).filter(Boolean); }
+function loadTableLayout() {
+  try { return normalizeTableLayout(JSON.parse(localStorage.getItem(TABLE_LAYOUT_KEY)) || {}); }
+  catch { return defaultTableLayout(); }
+}
+function saveTableLayout() { tableLayout = normalizeTableLayout(tableLayout); localStorage.setItem(TABLE_LAYOUT_KEY, JSON.stringify(tableLayout)); }
+function orderedColumns() { const columns = normalizeTableLayout(tableLayout).order.map((key) => TABLE_COLUMNS.find((column) => column.key === key)).filter(Boolean); return columns.length ? columns : TABLE_COLUMNS; }
+function resetTableLayout() { tableLayout = defaultTableLayout(); saveTableLayout(); renderInventory(); }
 
 function render() { renderSelects(); renderInventory(); }
 function renderSelects() {
@@ -137,12 +147,14 @@ $('resetNetwork').onclick = () => { $('networkForm').reset(); $('networkId').val
 $('resetDevice').onclick = () => { $('deviceForm').reset(); $('deviceId').value = ''; };
 $('deviceIp').addEventListener('input', (event) => { event.target.value = event.target.value.replace(/[^0-9.]/g, '').replace(/\.{2,}/g, '.').slice(0, 15); });
 $('deviceMac').addEventListener('input', (event) => { const clean = event.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 12).toUpperCase(); event.target.value = clean.match(/.{1,2}/g)?.join(':') || ''; });
-function applyTheme(theme) { document.body.dataset.theme = theme; localStorage.setItem(THEME_KEY, theme); $('themeSelect').value = theme; }
+const ALLOWED_THEMES = ['ocean', 'ocean-deep', 'ocean-lagoon', 'ocean-night'];
+function applyTheme(theme) { const safeTheme = ALLOWED_THEMES.includes(theme) ? theme : 'ocean'; document.body.dataset.theme = safeTheme; localStorage.setItem(THEME_KEY, safeTheme); $('themeSelect').value = safeTheme; }
 $('themeSelect').addEventListener('change', (event) => applyTheme(event.target.value));
-applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+applyTheme(localStorage.getItem(THEME_KEY) || 'ocean');
 ['searchInput','networkFilter','typeFilter','sortSelect'].forEach((id) => $(id).addEventListener('input', renderInventory));
 $('tileView').onclick = () => { viewMode = 'tiles'; $('tileView').classList.add('active'); $('listView').classList.remove('active'); renderInventory(); };
 $('listView').onclick = () => { viewMode = 'list'; $('listView').classList.add('active'); $('tileView').classList.remove('active'); renderInventory(); };
+$('resetColumns').onclick = resetTableLayout;
 $('exportData').onclick = () => downloadBlob(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), 'nethome-manager.json');
 $('importData').onchange = async (event) => { const file = event.target.files[0]; if (!file) return; const imported = JSON.parse(await file.text()); state.networks = imported.networks || []; state.devices = imported.devices || []; void saveState().catch(handleStorageError); };
 $('exportXlsx').onclick = exportXlsx;

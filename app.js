@@ -31,16 +31,17 @@ Vérifiez que le serveur Node est lancé et que data/network-data.json est acces
 function networkName(id) { return state.networks.find((n) => n.id === id)?.name || 'Sans réseau'; }
 function ipValue(ip) { return (ip || '').split('.').reduce((acc, part) => (acc * 256) + Number(part || 0), 0); }
 function statusClass(status) { return `status-${normalize(status).replace(/[^a-z0-9]+/g, '-')}`; }
+function typeClass(type) { return `type-${normalize(type || 'autre').replace(/[^a-z0-9]+/g, '-')}`; }
 function ipModeValue(device) { if (device.ipMode) return device.ipMode; if (device.staticIp) return 'fixed'; if (device.dhcp) return 'dhcp'; return 'none'; }
 function ipModeLabel(device) { return { none: 'Non défini', fixed: 'IP Fixe', dhcp: 'DHCP', reservation: 'Statique (Réservation DHCP)' }[ipModeValue(device)] || 'Non défini'; }
 function actionButtons(d) { return `<button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button> <button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button>`; }
 const TABLE_COLUMNS = [
   { key: 'name', label: 'Nom', cell: (d) => `<strong>${d.name}</strong>`, value: (d) => d.name, className: 'name-cell' },
-  { key: 'network', label: 'Réseau', cell: (d) => networkName(d.networkId), value: (d) => networkName(d.networkId) },
   { key: 'type', label: 'Type', cell: (d) => d.type || '-', value: (d) => d.type },
   { key: 'addressing', label: 'Adressage', cell: (d) => ipModeLabel(d), value: (d) => ipModeLabel(d) },
   { key: 'ip', label: 'IP', cell: (d) => d.ip || '-', value: (d) => ipValue(d.ip) },
   { key: 'mac', label: 'MAC', cell: (d) => d.mac || '-', value: (d) => d.mac },
+  { key: 'network', label: 'Réseau', cell: (d) => networkName(d.networkId), value: (d) => networkName(d.networkId) },
   { key: 'login', label: 'Login', cell: (d) => d.login || '-', value: (d) => d.login },
   { key: 'password', label: 'Mot de passe', cell: (d) => d.password || '-', value: (d) => d.password },
   { key: 'url', label: 'URL', cell: (d) => d.url ? `<a href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Gestion</a>` : '-', value: (d) => d.url },
@@ -89,13 +90,13 @@ function renderInventory() {
   container.innerHTML = viewMode === 'list' ? renderTable(devices) : devices.map(renderCard).join('');
 }
 function renderCard(d) {
-  return `<article class="device-card" role="button" tabindex="0" onclick="showDeviceDetails('${d.id}')" onkeydown="handleCardKey(event, '${d.id}')"><div class="card-top"><span class="badge">${networkName(d.networkId)}</span><span class="badge ${statusClass(d.status)}">${d.status}</span></div><h3>${d.name}</h3><p class="device-meta"><strong>${d.type}</strong> · ${d.location || 'emplacement non défini'}</p><dl class="mini-specs"><div><dt>IP</dt><dd>${d.ip || '-'}</dd></div><div><dt>Mode</dt><dd>${ipModeLabel(d)}</dd></div><div><dt>MAC</dt><dd>${d.mac || '-'}</dd></div><div><dt>Login</dt><dd>${d.login || '-'}</dd></div></dl>${d.url ? `<a class="manage-link" href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir l’interface de gestion</a>` : ''}${d.notes ? `<p class="notes">${d.notes}</p>` : ''}<div class="card-actions"><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button><button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></div></article>`;
+  return `<article class="device-card ${typeClass(d.type)}" role="button" tabindex="0" onclick="showDeviceDetails('${d.id}')" onkeydown="handleCardKey(event, '${d.id}')"><div class="card-top"><span class="badge">${networkName(d.networkId)}</span><span class="badge ${statusClass(d.status)}">${d.status}</span></div><h3>${d.name}</h3><p class="device-meta"><strong>${d.type}</strong> · ${d.location || 'emplacement non défini'}</p><dl class="mini-specs"><div><dt>IP</dt><dd>${d.ip || '-'}</dd></div><div><dt>Mode</dt><dd>${ipModeLabel(d)}</dd></div><div><dt>MAC</dt><dd>${d.mac || '-'}</dd></div><div><dt>Login</dt><dd>${d.login || '-'}</dd></div></dl>${d.url ? `<a class="manage-link" href="${d.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir l’interface de gestion</a>` : ''}${d.notes ? `<p class="notes">${d.notes}</p>` : ''}<div class="card-actions"><button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button><button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button></div></article>`;
 }
 function renderTable(devices) {
   const columns = TABLE_COLUMNS;
   const sortedDevices = sortDevicesForTable(devices);
   const headers = columns.map((column) => `<th><button class="sortable-header" onclick="sortTableBy('${column.key}')">${column.label}${tableSort.key === column.key ? ` <span>${tableSort.direction === 'asc' ? '▲' : '▼'}</span>` : ''}</button></th>`).join('');
-  const rows = sortedDevices.map((d) => `<tr class="clickable-row" onclick="showDeviceDetails('${d.id}')">${columns.map((column) => `<td class="${column.className || ''}">${column.cell(d)}</td>`).join('')}</tr>`).join('');
+  const rows = sortedDevices.map((d) => `<tr class="clickable-row ${typeClass(d.type)}" onclick="showDeviceDetails('${d.id}')">${columns.map((column) => `<td class="${column.className || ''}">${column.cell(d)}</td>`).join('')}</tr>`).join('');
   return `<table class="sortable-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 function emptyState() { return $('emptyStateTemplate').innerHTML; }

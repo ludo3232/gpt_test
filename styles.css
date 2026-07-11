@@ -400,3 +400,22 @@ body[data-theme="ocean-night"] {
 .device-card.type-imprimante, .clickable-row.type-imprimante { background: color-mix(in srgb, #a855f7 16%, var(--card)); }
 .device-card.type-autre, .clickable-row.type-autre { background: color-mix(in srgb, #94a3b8 14%, var(--card)); }
 .clickable-row[class*="type-"]:hover { filter: brightness(1.12); }
+
+.type-colors-panel { width: min(680px, 92vw); }
+.type-colors-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: .6rem;
+  margin-bottom: 1rem;
+}
+.type-color-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.type-color-row input { width: 3rem; height: 2rem; padding: .1rem; }

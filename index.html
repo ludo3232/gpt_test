@@ -19,6 +19,7 @@
       <select id="themeSelect" class="theme-select" aria-label="Choisir un thème"><option value="ocean">Océan classique</option><option value="ocean-deep">Océan profond</option><option value="ocean-lagoon">Océan lagon</option><option value="ocean-night">Océan nuit</option><option value="dark">Thème sombre</option><option value="light">Thème clair</option><option value="midnight">Thème nuit</option><option value="forest">Thème forêt</option><option value="slate">Thème ardoise</option><option value="sunset">Thème coucher de soleil</option><option value="highcontrast">Contraste élevé</option></select>
       <button id="openNetworkModal">Gérer les réseaux</button>
       <button id="openDeviceModal">+ Appareil</button>
+      <button id="openTypeColorsModal" class="secondary">Couleurs types</button>
     </div>
   </header>
 
@@ -100,6 +101,18 @@
       <button type="button" id="closeDetailsModal" class="secondary">Fermer</button>
     </div>
     <div id="deviceDetails" class="details-grid"></div>
+  </section></dialog>
+
+  <dialog id="typeColorsDialog" class="modal"><section class="panel form-panel type-colors-panel" aria-labelledby="type-colors-title">
+    <div class="details-header">
+      <h2 id="type-colors-title">Couleurs des types</h2>
+      <button type="button" id="closeTypeColorsModal" class="secondary">Fermer</button>
+    </div>
+    <div id="typeColorsList" class="type-colors-list"></div>
+    <div class="form-actions">
+      <button type="button" id="saveTypeColors">Enregistrer les couleurs</button>
+      <button type="button" id="resetTypeColors" class="secondary">Réinitialiser</button>
+    </div>
   </section></dialog>
 
   <template id="emptyStateTemplate"><div class="empty-state">Aucun élément à afficher. Ajoutez un réseau puis des périphériques.</div></template>

@@ -1,5 +1,6 @@
 const API_URL = '/api/data';
 const THEME_KEY = 'nethome-manager-theme';
+const TYPE_COLORS_KEY = 'nethome-manager-type-colors';
 const state = { networks: [], devices: [] };
 let viewMode = 'tiles';
 let tableSort = { key: 'name', direction: 'asc' };
@@ -32,6 +33,28 @@ function networkName(id) { return state.networks.find((n) => n.id === id)?.name 
 function ipValue(ip) { return (ip || '').split('.').reduce((acc, part) => (acc * 256) + Number(part || 0), 0); }
 function statusClass(status) { return `status-${normalize(status).replace(/[^a-z0-9]+/g, '-')}`; }
 function typeClass(type) { return `type-${normalize(type || 'autre').replace(/[^a-z0-9]+/g, '-')}`; }
+const DEFAULT_TYPE_COLORS = { 'serveur': '#2563eb', 'routeur': '#f59e0b', 'switch': '#10b981', 'point-d-acces': '#06b6d4', 'proxmox-ve': '#e57000', 'camera-lan': '#8b5cf6', 'machine-virtuelle': '#64748b', 'shelly': '#22c55e', 'gateway': '#14b8a6', 'ordinateur': '#0ea5e9', 'mobile': '#ec4899', 'iot': '#84cc16', 'imprimante': '#a855f7', 'autre': '#94a3b8' };
+let typeColors = loadTypeColors();
+function loadTypeColors() { try { return { ...DEFAULT_TYPE_COLORS, ...(JSON.parse(localStorage.getItem(TYPE_COLORS_KEY)) || {}) }; } catch { return { ...DEFAULT_TYPE_COLORS }; } }
+function typeKey(type) { return normalize(type || 'Autre').replace(/[^a-z0-9]+/g, '-') || 'autre'; }
+function typeLabelFromKey(key) { return key.split('-').map((part) => part ? part[0].toUpperCase() + part.slice(1) : '').join(' '); }
+function configuredTypeKeys() { const optionKeys = [...document.querySelectorAll('#deviceType option')].map((option) => typeKey(option.value)); const deviceKeys = state.devices.map((device) => typeKey(device.type)); return [...new Set([...Object.keys(DEFAULT_TYPE_COLORS), ...optionKeys, ...deviceKeys])].sort(); }
+function applyTypeColors() {
+  const style = document.getElementById('typeColorStyles') || Object.assign(document.createElement('style'), { id: 'typeColorStyles' });
+  style.textContent = configuredTypeKeys().map((key) => `.device-card.type-${key}, .clickable-row.type-${key}{background:color-mix(in srgb, ${typeColors[key] || DEFAULT_TYPE_COLORS.autre} 20%, var(--card));}`).join('\n');
+  document.head.appendChild(style);
+}
+function renderTypeColorSettings() {
+  $('typeColorsList').innerHTML = configuredTypeKeys().map((key) => `<label class="type-color-row"><span>${typeLabelFromKey(key)}</span><input type="color" data-type-key="${key}" value="${typeColors[key] || DEFAULT_TYPE_COLORS.autre}"></label>`).join('');
+}
+function saveTypeColorSettings() {
+  typeColors = { ...typeColors };
+  document.querySelectorAll('#typeColorsList input[type="color"]').forEach((input) => { typeColors[input.dataset.typeKey] = input.value; });
+  localStorage.setItem(TYPE_COLORS_KEY, JSON.stringify(typeColors));
+  applyTypeColors();
+  renderInventory();
+}
+function resetTypeColorSettings() { typeColors = { ...DEFAULT_TYPE_COLORS }; localStorage.setItem(TYPE_COLORS_KEY, JSON.stringify(typeColors)); renderTypeColorSettings(); applyTypeColors(); renderInventory(); }
 function ipModeValue(device) { if (device.ipMode) return device.ipMode; if (device.staticIp) return 'fixed'; if (device.dhcp) return 'dhcp'; return 'none'; }
 function ipModeLabel(device) { return { none: 'Non défini', fixed: 'IP Fixe', dhcp: 'DHCP', reservation: 'Statique (Réservation DHCP)' }[ipModeValue(device)] || 'Non défini'; }
 function actionButtons(d) { return `<button onclick="event.stopPropagation(); editDevice('${d.id}')">Éditer</button> <button class="danger" onclick="event.stopPropagation(); deleteDevice('${d.id}')">Supprimer</button>`; }
@@ -53,7 +76,7 @@ function sortDevicesForTable(devices) {
   const factor = tableSort.direction === 'asc' ? 1 : -1;
   return [...devices].sort((a, b) => String(column.value(a) ?? '').localeCompare(String(column.value(b) ?? ''), 'fr', { numeric: true }) * factor);
 }
-function render() { renderSelects(); renderInventory(); }
+function render() { renderSelects(); applyTypeColors(); renderInventory(); }
 function renderSelects() {
   const networkOptions = state.networks.map((n) => `<option value="${n.id}">${n.name} (${n.cidr})</option>`).join('');
   $('deviceNetwork').innerHTML = networkOptions || '<option value="">Ajoutez d’abord un réseau</option>';
@@ -133,6 +156,10 @@ $('openDeviceModal').onclick = () => { $('deviceForm').reset(); $('deviceId').va
 $('closeNetworkModal').onclick = () => closeDialog('networkDialog');
 $('closeDeviceModal').onclick = () => closeDialog('deviceDialog');
 $('closeDetailsModal').onclick = () => closeDialog('deviceDetailsDialog');
+$('openTypeColorsModal').onclick = () => { renderTypeColorSettings(); openDialog('typeColorsDialog'); };
+$('closeTypeColorsModal').onclick = () => closeDialog('typeColorsDialog');
+$('saveTypeColors').onclick = saveTypeColorSettings;
+$('resetTypeColors').onclick = resetTypeColorSettings;
 $('resetNetwork').onclick = () => { $('networkForm').reset(); $('networkId').value = ''; };
 $('resetDevice').onclick = () => { $('deviceForm').reset(); $('deviceId').value = ''; };
 $('deviceIp').addEventListener('input', (event) => { event.target.value = event.target.value.replace(/[^0-9.]/g, '').replace(/\.{2,}/g, '.').slice(0, 15); });

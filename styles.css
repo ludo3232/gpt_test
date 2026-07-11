@@ -419,3 +419,31 @@ body[data-theme="ocean-night"] {
   background: var(--card);
 }
 .type-color-row input { width: 3rem; height: 2rem; padding: .1rem; }
+
+/* Header layout: title first, actions below */
+.hero {
+  display: block;
+  padding-top: 2rem;
+  padding-bottom: 1.6rem;
+}
+.hero > div:first-child { margin-bottom: 1.4rem; }
+.hero-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .7rem;
+  justify-content: stretch;
+  align-items: stretch;
+  min-width: 0;
+}
+.hero-actions .theme-select { grid-column: span 2; }
+.hero-actions .secondary,
+.hero-actions .file-button,
+.hero-actions button,
+.hero-actions select {
+  width: 100%;
+  min-height: 2.6rem;
+}
+@media (max-width: 760px) {
+  .hero-actions { grid-template-columns: 1fr; }
+  .hero-actions .theme-select { grid-column: auto; }
+}

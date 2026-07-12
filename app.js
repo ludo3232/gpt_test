@@ -100,7 +100,13 @@ function resetForm(clearTitle = true) {
 }
 
 function renderPhotoPreview() {
-  $('photoPreview').innerHTML = selectedPhotos.map((src) => `<img src="${src}" alt="Photo de recette">`).join('');
+  $('photoPreview').className = 'photo-edit-grid';
+  $('photoPreview').innerHTML = selectedPhotos.map((src, index) => `
+    <div class="photo-edit">
+      <img src="${src}" alt="Photo de recette ${index + 1}">
+      <button type="button" class="${index === 0 ? 'main-photo' : 'ghost'}" data-main-photo="${index}">${index === 0 ? 'Photo principale' : 'Définir principale'}</button>
+      <button type="button" class="ghost" data-remove-photo="${index}">Supprimer</button>
+    </div>`).join('');
 }
 
 function visibleRecipes() {
@@ -253,6 +259,19 @@ $('exportBtn').addEventListener('click', downloadDatabase);
 $('cardViewBtn').addEventListener('click', () => setView('cards'));
 $('listViewBtn').addEventListener('click', () => setView('list'));
 $('themeSelect').addEventListener('change', (event) => setTheme(event.target.value));
+$('photoPreview').addEventListener('click', (event) => {
+  const removeIndex = event.target.dataset.removePhoto;
+  const mainIndex = event.target.dataset.mainPhoto;
+  if (removeIndex !== undefined) {
+    selectedPhotos.splice(Number(removeIndex), 1);
+    renderPhotoPreview();
+  }
+  if (mainIndex !== undefined) {
+    const [photo] = selectedPhotos.splice(Number(mainIndex), 1);
+    selectedPhotos.unshift(photo);
+    renderPhotoPreview();
+  }
+});
 document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => $(button.dataset.close).close()));
 $('importInput').addEventListener('change', async (event) => {
   const file = event.target.files[0];
@@ -261,11 +280,13 @@ $('importInput').addEventListener('change', async (event) => {
   render();
 });
 $('photos').addEventListener('change', async (event) => {
-  selectedPhotos = await Promise.all([...event.target.files].map((file) => new Promise((resolve) => {
+  const addedPhotos = await Promise.all([...event.target.files].map((file) => new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.readAsDataURL(file);
   })));
+  selectedPhotos = [...selectedPhotos, ...addedPhotos];
+  event.target.value = '';
   renderPhotoPreview();
 });
 form.addEventListener('submit', async (event) => {
@@ -287,7 +308,7 @@ function setView(nextMode) {
 }
 
 function setTheme(theme) {
-  document.body.classList.remove('theme-forest', 'theme-sunset', 'theme-light');
+  document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange', 'theme-light');
   if (theme && theme !== 'network') document.body.classList.add(`theme-${theme}`);
   $('themeSelect').value = theme || 'network';
   localStorage.setItem(STORAGE_KEY, theme || 'network');

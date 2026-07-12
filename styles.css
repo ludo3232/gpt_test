@@ -139,3 +139,9 @@ body.theme-cream input, body.theme-cream select, body.theme-cream textarea { bac
   .settings-actions { display: grid; grid-template-columns: 1fr; }
   .topbar .icon { width: 38px; min-height: 38px; justify-self: end; }
 }
+.type-settings { display: grid; gap: .7rem; }
+.type-editor, .type-row { display: grid; grid-template-columns: 1fr auto; gap: .5rem; align-items: end; }
+.type-manager { display: grid; gap: .5rem; }
+@media (max-width: 520px) {
+  .type-editor, .type-row { grid-template-columns: 1fr; }
+}

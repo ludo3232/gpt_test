@@ -62,6 +62,11 @@
         <button class="ghost icon" type="button" data-close="settingsDialog">×</button>
       </div>
       <label>Thème<select id="themeSelect"><option value="network">Réseau</option><option value="blue">Bleu nuit</option><option value="green">Vert sombre</option><option value="purple">Violet sombre</option><option value="orange">Orange sombre</option><option value="slate">Ardoise</option><option value="light">Clair</option><option value="cream">Crème</option></select></label>
+      <section class="type-settings">
+        <h3>Types de plat</h3>
+        <div class="type-editor"><input id="typeNameInput" placeholder="Ex. Brunch"><button id="addTypeBtn" type="button">Ajouter</button></div>
+        <div id="typeManager" class="type-manager"></div>
+      </section>
       <div class="settings-actions">
         <button id="exportBtn" class="ghost" type="button">Exporter la base</button>
         <label class="ghost file-label">Importer<input id="importInput" type="file" accept="application/json"></label>

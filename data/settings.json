@@ -1,0 +1,10 @@
+{
+  "recipeTypes": [
+    "Entrée",
+    "Plat",
+    "Dessert",
+    "Boisson",
+    "Sauce",
+    "Autre"
+  ]
+}

@@ -1,4 +1,4 @@
-const TYPES = ['Entrée', 'Plat', 'Dessert', 'Boisson', 'Sauce', 'Autre'];
+let TYPES = ['Entrée', 'Plat', 'Dessert', 'Boisson', 'Sauce', 'Autre'];
 const STORAGE_KEY = 'recipe-book-theme-v1';
 let recipes = [];
 let selectedPhotos = [];
@@ -11,6 +11,27 @@ const template = $('cardTemplate');
 function fillSelect(select, includeAll = false) {
   select.innerHTML = includeAll ? '<option value="all">Tous les types</option>' : '';
   TYPES.forEach((type) => select.add(new Option(type, type)));
+}
+
+async function loadSettings() {
+  try {
+    const response = await fetch('/api/settings');
+    const settings = response.ok ? await response.json() : {};
+    if (Array.isArray(settings.recipeTypes) && settings.recipeTypes.length) TYPES = settings.recipeTypes;
+  } catch {}
+  refreshTypeControls();
+}
+
+async function saveSettings() {
+  const response = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipeTypes: TYPES }),
+  });
+  if (!response.ok) throw new Error('Impossible de sauvegarder les types de plat.');
+  const settings = await response.json();
+  TYPES = settings.recipeTypes;
+  refreshTypeControls();
 }
 
 async function loadRecipes() {
@@ -155,7 +176,7 @@ function cardFor(recipe) {
   });
   node.querySelector('.badge').textContent = recipe.type;
   node.querySelector('h3').textContent = recipe.name;
-  node.querySelector('.meta').textContent = `${recipe.time || 'Temps libre'} · base ${recipe.servings} personne(s)`;
+  node.querySelector('.meta').textContent = metaText(recipe);
   node.querySelector('.steps').textContent = recipe.steps;
   const target = node.querySelector('.targetServings');
   const list = node.querySelector('.ingredientList');
@@ -206,6 +227,11 @@ function openDetail(id) {
   $('detailContent').querySelector('[data-close]').addEventListener('click', () => $('detailDialog').close());
   $('detailContent').querySelector('[data-edit]').addEventListener('click', () => editRecipe(id));
   $('detailContent').querySelector('[data-pdf]').addEventListener('click', () => exportRecipePdf(id));
+  const detailServings = $('detailContent').querySelector('#detailServings');
+  const detailIngredients = $('detailContent').querySelector('#detailIngredients');
+  detailServings.addEventListener('input', () => {
+    detailIngredients.innerHTML = scaledIngredients(recipe, detailServings.value).map((line) => `<li>${line}</li>`).join('');
+  });
   $('detailContent').querySelectorAll('img').forEach((img) => img.addEventListener('click', () => openImage(img.src)));
   $('detailDialog').showModal();
 }
@@ -213,12 +239,12 @@ function openDetail(id) {
 function detailMarkup(recipe) {
   const photos = recipe.photos || [];
   return `
-    <div class="modal-head"><div><span class="badge">${recipe.type}</span><h2>${recipe.name}</h2><p class="meta">${recipe.time || 'Temps libre'} · base ${recipe.servings} personne(s)</p></div><button class="ghost icon" data-close type="button">×</button></div>
+    <div class="modal-head"><div><span class="badge">${recipe.type}</span><h2>${recipe.name}</h2><p class="meta">${metaText(recipe)}</p></div><button class="ghost icon" data-close type="button">×</button></div>
     <div class="detail-top">
       <div class="detail-cover">${photos[0] ? `<img src="${photos[0]}" alt="${recipe.name}">` : '<p class="panel muted" style="padding:1rem">Aucune photo</p>'}</div>
       <div><div class="detail-actions"><button data-edit type="button">Modifier</button><button data-pdf class="ghost" type="button">Exporter en PDF</button></div><p class="steps">${recipe.steps}</p></div>
     </div>
-    <div class="detail-grid"><section><h3>Ingrédients</h3><ul>${scaledIngredients(recipe).map((line) => `<li>${line}</li>`).join('')}</ul></section><section><h3>Photos</h3><div class="photo-grid">${photos.map((src) => `<img src="${src}" alt="Photo de ${recipe.name}">`).join('')}</div></section></div>`;
+    <div class="detail-grid"><section><h3>Ingrédients</h3><label class="scale">Nombre de personnes<input id="detailServings" type="number" min="1" value="${recipe.servings}"></label><ul id="detailIngredients">${scaledIngredients(recipe).map((line) => `<li>${line}</li>`).join('')}</ul></section><section><h3>Photos</h3><div class="photo-grid">${photos.map((src) => `<img src="${src}" alt="Photo de ${recipe.name}">`).join('')}</div></section></div>`;
 }
 
 function openImage(src) {
@@ -251,11 +277,28 @@ function pdfDocument(recipe) {
   const photos = recipe.photos || [];
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${recipe.name}</title><style>
     @page { margin: 16mm; } body { font-family: Arial, sans-serif; color: #142032; } h1 { color: #0b6f66; margin-bottom: 0; } .meta { color: #607084; } .hero { width: 100%; max-height: 100mm; object-fit: cover; border-radius: 8px; margin: 12px 0; } .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 18px; } li { margin: 5px 0; } .steps { white-space: pre-wrap; line-height: 1.45; } .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; } .photos img { width: 100%; height: 42mm; object-fit: cover; border-radius: 6px; } @media print { button { display: none; } }
-  </style></head><body><button onclick="print()">Imprimer / enregistrer en PDF</button><h1>${recipe.name}</h1><p class="meta">${recipe.type} · ${recipe.time || 'Temps libre'} · ${recipe.servings} personne(s)</p>${photos[0] ? `<img class="hero" src="${photos[0]}" alt="${recipe.name}">` : ''}<div class="grid"><section><h2>Ingrédients</h2><ul>${scaledIngredients(recipe).map((line) => `<li>${line}</li>`).join('')}</ul></section><section><h2>Préparation</h2><p class="steps">${recipe.steps}</p></section></div>${photos.length > 1 ? `<h2>Photos</h2><div class="photos">${photos.slice(1).map((src) => `<img src="${src}" alt="Photo de ${recipe.name}">`).join('')}</div>` : ''}</body></html>`;
+  </style></head><body><button onclick="print()">Imprimer / enregistrer en PDF</button><h1>${recipe.name}</h1><p class="meta">${recipe.type} · ${metaText(recipe)}</p>${photos[0] ? `<img class="hero" src="${photos[0]}" alt="${recipe.name}">` : ''}<div class="grid"><section><h2>Ingrédients</h2><ul>${scaledIngredients(recipe).map((line) => `<li>${line}</li>`).join('')}</ul></section><section><h2>Préparation</h2><p class="steps">${recipe.steps}</p></section></div>${photos.length > 1 ? `<h2>Photos</h2><div class="photos">${photos.slice(1).map((src) => `<img src="${src}" alt="Photo de ${recipe.name}">`).join('')}</div>` : ''}</body></html>`;
 }
 
-fillSelect($('type'));
-fillSelect($('filterType'), true);
+function metaText(recipe) {
+  return [recipe.time, `base ${recipe.servings} personne(s)`].filter(Boolean).join(' · ');
+}
+
+function refreshTypeControls() {
+  fillSelect($('type'));
+  fillSelect($('filterType'), true);
+  renderTypeManager();
+}
+
+function renderTypeManager() {
+  $('typeManager').innerHTML = TYPES.map((type, index) => `
+    <div class="type-row">
+      <input value="${type}" data-type-index="${index}" aria-label="Modifier ${type}">
+      <button type="button" class="ghost" data-delete-type="${index}">Supprimer</button>
+    </div>`).join('');
+}
+
+refreshTypeControls();
 ['search', 'filterType', 'sortBy'].forEach((id) => $(id).addEventListener('input', render));
 $('openRecipeBtn').addEventListener('click', () => openRecipeDialog());
 $('settingsBtn').addEventListener('click', () => $('settingsDialog').showModal());
@@ -267,6 +310,23 @@ $('exportBtn').addEventListener('click', downloadDatabase);
 $('cardViewBtn').addEventListener('click', () => setView('cards'));
 $('listViewBtn').addEventListener('click', () => setView('list'));
 $('themeSelect').addEventListener('change', (event) => setTheme(event.target.value));
+$('addTypeBtn').addEventListener('click', async () => {
+  const value = $('typeNameInput').value.trim();
+  if (!value) return;
+  TYPES.push(value);
+  $('typeNameInput').value = '';
+  await saveSettings();
+});
+$('typeManager').addEventListener('change', async (event) => {
+  if (event.target.dataset.typeIndex === undefined) return;
+  TYPES[Number(event.target.dataset.typeIndex)] = event.target.value.trim() || 'Autre';
+  await saveSettings();
+});
+$('typeManager').addEventListener('click', async (event) => {
+  if (event.target.dataset.deleteType === undefined) return;
+  TYPES.splice(Number(event.target.dataset.deleteType), 1);
+  await saveSettings();
+});
 $('deleteEditBtn').addEventListener('click', async () => {
   const id = $('recipeId').value;
   if (!id) return;
@@ -344,4 +404,4 @@ function setTheme(theme) {
 
 setTheme(localStorage.getItem(STORAGE_KEY) || 'network');
 setView(viewMode);
-loadRecipes();
+loadSettings().then(loadRecipes);

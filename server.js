@@ -6,6 +6,7 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const DATA_FILE = path.join(ROOT, 'data', 'recipes-db.json');
+const SETTINGS_FILE = path.join(ROOT, 'data', 'settings.json');
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
 const PUBLIC_TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'], ['.css', 'text/css; charset=utf-8'], ['.js', 'text/javascript; charset=utf-8'],
@@ -16,6 +17,7 @@ async function ensureStorage() {
   await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
   try { await fs.access(DATA_FILE); } catch { await fs.writeFile(DATA_FILE, '[]\n'); }
+  try { await fs.access(SETTINGS_FILE); } catch { await fs.writeFile(SETTINGS_FILE, JSON.stringify({ recipeTypes: ['Entrée', 'Plat', 'Dessert', 'Boisson', 'Sauce', 'Autre'] }, null, 2) + '\n'); }
 }
 
 async function readRecipes() {
@@ -27,6 +29,18 @@ async function readRecipes() {
 async function writeRecipes(recipes) {
   await ensureStorage();
   await fs.writeFile(DATA_FILE, `${JSON.stringify(recipes, null, 2)}\n`);
+}
+
+async function readSettings() {
+  await ensureStorage();
+  return JSON.parse(await fs.readFile(SETTINGS_FILE, 'utf8'));
+}
+
+async function writeSettings(settings) {
+  const recipeTypes = Array.isArray(settings.recipeTypes) ? settings.recipeTypes.map((type) => String(type).trim()).filter(Boolean) : [];
+  const nextSettings = { recipeTypes: [...new Set(recipeTypes)].length ? [...new Set(recipeTypes)] : ['Autre'] };
+  await fs.writeFile(SETTINGS_FILE, `${JSON.stringify(nextSettings, null, 2)}\n`);
+  return nextSettings;
 }
 
 function sendJson(res, status, data) {
@@ -85,6 +99,8 @@ function normalizeRecipe(recipe) {
 }
 
 async function handleApi(req, res, url) {
+  if (url.pathname === '/api/settings' && req.method === 'GET') return sendJson(res, 200, await readSettings());
+  if (url.pathname === '/api/settings' && req.method === 'PUT') return sendJson(res, 200, await writeSettings(JSON.parse((await readBody(req)).toString('utf8') || '{}')));
   if (url.pathname === '/api/recipes' && req.method === 'GET') return sendJson(res, 200, await readRecipes());
   if (url.pathname === '/api/recipes' && req.method === 'PUT') {
     const imported = [];

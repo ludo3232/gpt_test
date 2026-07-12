@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Livre de recettes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Gestion maison</p>
+      <h1>Livre de recettes</h1>
+    </div>
+    <div class="actions">
+      <button id="exportBtn" class="ghost">Exporter la base</button>
+      <label class="ghost file-label">Importer<input id="importInput" type="file" accept="application/json"></label>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel form-panel" aria-labelledby="formTitle">
+      <h2 id="formTitle">Ajouter une recette</h2>
+      <form id="recipeForm">
+        <input type="hidden" id="recipeId">
+        <div class="grid two">
+          <label>Nom de la recette<input id="name" required placeholder="Ex. Lasagnes maison"></label>
+          <label>Type<select id="type" required></select></label>
+        </div>
+        <div class="grid two">
+          <label>Personnes de base<input id="servings" type="number" min="1" value="4" required></label>
+          <label>Temps<input id="time" placeholder="Ex. 45 min"></label>
+        </div>
+        <label>Ingrédients <span class="hint">1 ligne = quantité unité nom (ex. 200 g farine)</span><textarea id="ingredients" rows="6" required></textarea></label>
+        <label>Préparation<textarea id="steps" rows="6" required></textarea></label>
+        <label>Photos depuis le téléphone ou le PC<input id="photos" type="file" accept="image/*" capture="environment" multiple></label>
+        <div id="photoPreview" class="photo-grid"></div>
+        <div class="form-actions">
+          <button type="submit">Enregistrer</button>
+          <button id="resetBtn" type="button" class="ghost">Nouveau</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="content">
+      <div class="toolbar panel">
+        <label>Recherche<input id="search" placeholder="Nom, ingrédient..."></label>
+        <label>Type<select id="filterType"></select></label>
+        <label>Trier<select id="sortBy"><option value="date">Dernières ajoutées</option><option value="name">Nom A-Z</option><option value="type">Type</option></select></label>
+      </div>
+      <div id="recipeList" class="cards"></div>
+    </section>
+  </main>
+
+  <template id="cardTemplate">
+    <article class="card">
+      <div class="cover"></div>
+      <div class="card-body">
+        <div class="card-head"><div><span class="badge"></span><h3></h3></div><button class="delete ghost" title="Supprimer">×</button></div>
+        <p class="meta"></p>
+        <label class="scale">Nombre de personnes<input class="targetServings" type="number" min="1"></label>
+        <h4>Ingrédients adaptés</h4><ul class="ingredientList"></ul>
+        <h4>Préparation</h4><p class="steps"></p>
+        <div class="photos photo-grid"></div>
+        <button class="edit">Modifier</button>
+      </div>
+    </article>
+  </template>
+  <script src="app.js"></script>
+</body>
+</html>

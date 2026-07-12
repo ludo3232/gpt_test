@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Livre de recettes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Livre de recettes</h1>
+    </div>
+    <div class="actions">
+      <button id="openRecipeBtn">Ajouter une recette</button>
+      <button id="settingsBtn" class="ghost icon" aria-label="Configuration" title="Configuration">⚙</button>
+    </div>
+  </header>
+
+  <main class="content-shell">
+    <section class="toolbar panel" aria-label="Filtres des recettes">
+      <label>Recherche<input id="search" placeholder="Nom, ingrédient..."></label>
+      <label>Type<select id="filterType"></select></label>
+      <label>Trier<select id="sortBy"><option value="date">Dernières ajoutées</option><option value="name">Nom A-Z</option><option value="type">Type</option></select></label>
+      <div class="view-switch" role="group" aria-label="Mode d'affichage">
+        <button id="cardViewBtn" class="active" type="button">Cartes</button>
+        <button id="listViewBtn" class="ghost" type="button">Liste</button>
+      </div>
+    </section>
+    <section id="recipeList" class="cards" aria-live="polite"></section>
+  </main>
+
+  <dialog id="recipeDialog" class="modal recipe-modal">
+    <form id="recipeForm">
+      <div class="modal-head">
+        <div><p class="eyebrow">Recette</p><h2 id="formTitle">Ajouter une recette</h2></div>
+        <button class="ghost icon" value="cancel" type="button" data-close="recipeDialog">×</button>
+      </div>
+      <input type="hidden" id="recipeId">
+      <div class="form-grid">
+        <label>Nom de la recette<input id="name" required placeholder="Ex. Lasagnes maison"></label>
+        <label>Type<select id="type" required></select></label>
+        <label>Personnes de base<input id="servings" type="number" min="1" value="4" required></label>
+        <label>Temps<input id="time" placeholder="Ex. 45 min"></label>
+      </div>
+      <label>Ingrédients <span class="hint">1 ligne = quantité unité nom (ex. 200 g farine)</span><textarea id="ingredients" rows="10" required></textarea></label>
+      <label>Préparation<textarea id="steps" rows="12" required></textarea></label>
+      <label>Photos depuis le téléphone ou le PC<input id="photos" type="file" accept="image/*" multiple></label>
+      <div id="photoPreview" class="photo-grid"></div>
+      <div class="form-actions">
+        <button type="submit">Enregistrer</button>
+        <button id="resetBtn" type="button" class="ghost">Nouveau</button>
+        <button id="deleteEditBtn" type="button" class="ghost danger-btn">Supprimer la recette</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="modal settings-modal">
+    <div class="settings-content">
+      <div class="modal-head">
+        <div><p class="eyebrow">Configuration</p><h2>Paramètres</h2></div>
+        <button class="ghost icon" type="button" data-close="settingsDialog">×</button>
+      </div>
+      <label>Thème<select id="themeSelect"><option value="network">Réseau</option><option value="blue">Bleu nuit</option><option value="green">Vert sombre</option><option value="purple">Violet sombre</option><option value="orange">Orange sombre</option><option value="slate">Ardoise</option><option value="light">Clair</option><option value="cream">Crème</option></select></label>
+      <section class="type-settings">
+        <h3>Types de plat</h3>
+        <div class="type-editor"><input id="typeNameInput" placeholder="Ex. Brunch"><button id="addTypeBtn" type="button">Ajouter</button></div>
+        <div id="typeManager" class="type-manager"></div>
+      </section>
+      <div class="settings-actions">
+        <button id="exportBtn" class="ghost" type="button">Exporter la base</button>
+        <label class="ghost file-label">Importer<input id="importInput" type="file" accept="application/json"></label>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="detailDialog" class="modal detail-modal">
+    <article id="detailContent"></article>
+  </dialog>
+
+  <dialog id="imageDialog" class="modal image-modal">
+    <button class="ghost icon image-close" type="button" data-close="imageDialog">×</button>
+    <img id="largeImage" alt="Photo agrandie">
+  </dialog>
+
+  <template id="cardTemplate">
+    <article class="card recipe-item" tabindex="0">
+      <div class="cover"></div>
+      <div class="card-body">
+        <div class="card-head"><div><span class="badge"></span><h3></h3></div></div>
+        <p class="meta"></p>
+        <label class="scale">Nombre de personnes<input class="targetServings" type="number" min="1"></label>
+        <h4>Ingrédients adaptés</h4><ul class="ingredientList"></ul>
+        <h4>Préparation</h4><p class="steps"></p>
+        <div class="photos photo-grid"></div>
+      </div>
+    </article>
+  </template>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 const TYPES = ['Entrée', 'Plat', 'Dessert', 'Boisson', 'Sauce', 'Autre'];
-const STORAGE_KEY = 'recipe-book-db-v1';
+const STORAGE_KEY = 'recipe-book-theme-v1';
 let recipes = [];
 let selectedPhotos = [];
 let viewMode = 'cards';
@@ -14,22 +14,34 @@ function fillSelect(select, includeAll = false) {
 }
 
 async function loadRecipes() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    recipes = JSON.parse(stored);
-  } else {
-    try {
-      const response = await fetch('data/recipes-db.json');
-      recipes = response.ok ? await response.json() : [];
-    } catch {
-      recipes = [];
-    }
+  try {
+    const response = await fetch('/api/recipes');
+    recipes = response.ok ? await response.json() : [];
+  } catch {
+    recipes = [];
   }
   render();
 }
 
-function saveRecipes() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+async function saveRecipeToServer(recipe) {
+  const isUpdate = recipes.some((item) => item.id === recipe.id);
+  const response = await fetch(isUpdate ? `/api/recipes/${encodeURIComponent(recipe.id)}` : '/api/recipes', {
+    method: isUpdate ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(recipe),
+  });
+  if (!response.ok) throw new Error('Impossible de sauvegarder la recette sur le serveur.');
+  return response.json();
+}
+
+async function replaceServerDatabase(nextRecipes) {
+  const response = await fetch('/api/recipes', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(nextRecipes),
+  });
+  if (!response.ok) throw new Error('Impossible d’importer la base sur le serveur.');
+  return response.json();
 }
 
 function parseIngredient(line, factor) {
@@ -164,10 +176,14 @@ function editRecipe(id) {
   if (recipe) openRecipeDialog(recipe);
 }
 
-function deleteRecipe(id) {
+async function deleteRecipe(id) {
   if (!confirm('Supprimer cette recette ?')) return;
+  const response = await fetch(`/api/recipes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!response.ok) {
+    alert('Impossible de supprimer la recette sur le serveur.');
+    return;
+  }
   recipes = recipes.filter((recipe) => recipe.id !== id);
-  saveRecipes();
   render();
   $('detailDialog').close();
 }
@@ -236,12 +252,12 @@ $('resetBtn').addEventListener('click', () => resetForm());
 $('exportBtn').addEventListener('click', downloadDatabase);
 $('cardViewBtn').addEventListener('click', () => setView('cards'));
 $('listViewBtn').addEventListener('click', () => setView('list'));
+$('themeSelect').addEventListener('change', (event) => setTheme(event.target.value));
 document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => $(button.dataset.close).close()));
 $('importInput').addEventListener('change', async (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  recipes = JSON.parse(await file.text());
-  saveRecipes();
+  recipes = await replaceServerDatabase(JSON.parse(await file.text()));
   render();
 });
 $('photos').addEventListener('change', async (event) => {
@@ -252,13 +268,12 @@ $('photos').addEventListener('change', async (event) => {
   })));
   renderPhotoPreview();
 });
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const recipe = recipeFromForm();
+  const recipe = await saveRecipeToServer(recipeFromForm());
   const index = recipes.findIndex((item) => item.id === recipe.id);
   if (index >= 0) recipes[index] = recipe;
   else recipes.unshift(recipe);
-  saveRecipes();
   resetForm();
   $('recipeDialog').close();
   render();
@@ -271,4 +286,12 @@ function setView(nextMode) {
   render();
 }
 
+function setTheme(theme) {
+  document.body.classList.remove('theme-forest', 'theme-sunset', 'theme-light');
+  if (theme && theme !== 'network') document.body.classList.add(`theme-${theme}`);
+  $('themeSelect').value = theme || 'network';
+  localStorage.setItem(STORAGE_KEY, theme || 'network');
+}
+
+setTheme(localStorage.getItem(STORAGE_KEY) || 'network');
 loadRecipes();

@@ -1,1 +1,7 @@
-{"scripts":{"test":"node --check app.js"},"devDependencies":{}}
+{
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --check app.js && node --check server.js"
+  },
+  "devDependencies": {}
+}

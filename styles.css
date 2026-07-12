@@ -129,3 +129,13 @@ body.theme-light input, body.theme-light select, body.theme-light textarea { bac
 .photo-edit img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; }
 .photo-edit button { width: 100%; padding: .45rem .55rem; font-size: .78rem; }
 .photo-edit .main-photo { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #04131c; }
+.settings-content { padding: clamp(1rem, 3vw, 2rem); display: grid; gap: 1rem; }
+.settings-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+.danger-btn { color: var(--danger); }
+body.theme-slate { --bg: #0f172a; --panel: #111827; --panel-2: #1f2937; --accent: #38bdf8; --accent-2: #818cf8; }
+body.theme-cream { --bg: #f8f0df; --panel: #fffaf0; --panel-2: #f4e6c8; --accent: #b45309; --accent-2: #0f766e; --text: #2b2118; --muted: #7c6f64; --border: rgba(43,33,24,.16); --shadow: 0 20px 50px rgba(43,33,24,.13); }
+body.theme-cream input, body.theme-cream select, body.theme-cream textarea { background: #fffdf7; }
+@media (max-width: 520px) {
+  .settings-actions { display: grid; grid-template-columns: 1fr; }
+  .topbar .icon { width: 38px; min-height: 38px; justify-self: end; }
+}

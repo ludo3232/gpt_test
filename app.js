@@ -2,7 +2,7 @@ const TYPES = ['Entrée', 'Plat', 'Dessert', 'Boisson', 'Sauce', 'Autre'];
 const STORAGE_KEY = 'recipe-book-theme-v1';
 let recipes = [];
 let selectedPhotos = [];
-let viewMode = 'cards';
+let viewMode = window.matchMedia('(max-width: 520px)').matches ? 'list' : 'cards';
 
 const $ = (id) => document.getElementById(id);
 const form = $('recipeForm');
@@ -88,6 +88,7 @@ function fillForm(recipe) {
   selectedPhotos = recipe.photos || [];
   renderPhotoPreview();
   $('formTitle').textContent = 'Modifier la recette';
+  $('deleteEditBtn').style.display = 'inline-flex';
 }
 
 function resetForm(clearTitle = true) {
@@ -96,6 +97,7 @@ function resetForm(clearTitle = true) {
   $('servings').value = 4;
   selectedPhotos = [];
   $('photoPreview').innerHTML = '';
+  $('deleteEditBtn').style.display = 'none';
   if (clearTitle) $('formTitle').textContent = 'Ajouter une recette';
 }
 
@@ -165,7 +167,6 @@ function cardFor(recipe) {
     openImage(img.src);
   }));
   wireButton(node.querySelector('.edit'), () => editRecipe(recipe.id));
-  wireButton(node.querySelector('.delete'), () => deleteRecipe(recipe.id));
   wireButton(node.querySelector('.pdf'), () => exportRecipePdf(recipe.id));
   return card;
 }
@@ -191,8 +192,9 @@ async function deleteRecipe(id) {
   }
   recipes = recipes.filter((recipe) => recipe.id !== id);
   render();
-  $('detailDialog').close();
+  closeDialog('detailDialog');
 }
+
 
 function openDetail(id) {
   const recipe = recipes.find((item) => item.id === id);
@@ -201,7 +203,6 @@ function openDetail(id) {
   $('detailContent').querySelector('[data-close]').addEventListener('click', () => $('detailDialog').close());
   $('detailContent').querySelector('[data-edit]').addEventListener('click', () => editRecipe(id));
   $('detailContent').querySelector('[data-pdf]').addEventListener('click', () => exportRecipePdf(id));
-  $('detailContent').querySelector('[data-delete]').addEventListener('click', () => deleteRecipe(id));
   $('detailContent').querySelectorAll('img').forEach((img) => img.addEventListener('click', () => openImage(img.src)));
   $('detailDialog').showModal();
 }
@@ -212,7 +213,7 @@ function detailMarkup(recipe) {
     <div class="modal-head"><div><span class="badge">${recipe.type}</span><h2>${recipe.name}</h2><p class="meta">${recipe.time || 'Temps libre'} · base ${recipe.servings} personne(s)</p></div><button class="ghost icon" data-close type="button">×</button></div>
     <div class="detail-top">
       <div class="detail-cover">${photos[0] ? `<img src="${photos[0]}" alt="${recipe.name}">` : '<p class="panel muted" style="padding:1rem">Aucune photo</p>'}</div>
-      <div><div class="detail-actions"><button data-edit type="button">Modifier</button><button data-pdf class="ghost" type="button">Exporter en PDF</button><button data-delete class="ghost" type="button">Supprimer</button></div><p class="steps">${recipe.steps}</p></div>
+      <div><div class="detail-actions"><button data-edit type="button">Modifier</button><button data-pdf class="ghost" type="button">Exporter en PDF</button></div><p class="steps">${recipe.steps}</p></div>
     </div>
     <div class="detail-grid"><section><h3>Ingrédients</h3><ul>${scaledIngredients(recipe).map((line) => `<li>${line}</li>`).join('')}</ul></section><section><h3>Photos</h3><div class="photo-grid">${photos.map((src) => `<img src="${src}" alt="Photo de ${recipe.name}">`).join('')}</div></section></div>`;
 }
@@ -254,11 +255,19 @@ fillSelect($('type'));
 fillSelect($('filterType'), true);
 ['search', 'filterType', 'sortBy'].forEach((id) => $(id).addEventListener('input', render));
 $('openRecipeBtn').addEventListener('click', () => openRecipeDialog());
+$('settingsBtn').addEventListener('click', () => $('settingsDialog').showModal());
 $('resetBtn').addEventListener('click', () => resetForm());
 $('exportBtn').addEventListener('click', downloadDatabase);
 $('cardViewBtn').addEventListener('click', () => setView('cards'));
 $('listViewBtn').addEventListener('click', () => setView('list'));
 $('themeSelect').addEventListener('change', (event) => setTheme(event.target.value));
+$('deleteEditBtn').addEventListener('click', async () => {
+  const id = $('recipeId').value;
+  if (!id) return;
+  await deleteRecipe(id);
+  closeDialog('recipeDialog');
+  resetForm();
+});
 $('photoPreview').addEventListener('click', (event) => {
   const removeIndex = event.target.dataset.removePhoto;
   const mainIndex = event.target.dataset.mainPhoto;
@@ -272,7 +281,7 @@ $('photoPreview').addEventListener('click', (event) => {
     renderPhotoPreview();
   }
 });
-document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => $(button.dataset.close).close()));
+document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => closeDialog(button.dataset.close)));
 $('importInput').addEventListener('change', async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -307,12 +316,18 @@ function setView(nextMode) {
   render();
 }
 
+function closeDialog(id) {
+  const dialog = $(id);
+  if (dialog?.open) dialog.close();
+}
+
 function setTheme(theme) {
-  document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange', 'theme-light');
+  document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange', 'theme-slate', 'theme-light', 'theme-cream');
   if (theme && theme !== 'network') document.body.classList.add(`theme-${theme}`);
   $('themeSelect').value = theme || 'network';
   localStorage.setItem(STORAGE_KEY, theme || 'network');
 }
 
 setTheme(localStorage.getItem(STORAGE_KEY) || 'network');
+setView(viewMode);
 loadRecipes();

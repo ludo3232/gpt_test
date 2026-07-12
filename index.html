@@ -13,47 +13,60 @@
       <h1>Livre de recettes</h1>
     </div>
     <div class="actions">
+      <button id="openRecipeBtn">Ajouter une recette</button>
       <button id="exportBtn" class="ghost">Exporter la base</button>
       <label class="ghost file-label">Importer<input id="importInput" type="file" accept="application/json"></label>
     </div>
   </header>
 
-  <main class="layout">
-    <section class="panel form-panel" aria-labelledby="formTitle">
-      <h2 id="formTitle">Ajouter une recette</h2>
-      <form id="recipeForm">
-        <input type="hidden" id="recipeId">
-        <div class="grid two">
-          <label>Nom de la recette<input id="name" required placeholder="Ex. Lasagnes maison"></label>
-          <label>Type<select id="type" required></select></label>
-        </div>
-        <div class="grid two">
-          <label>Personnes de base<input id="servings" type="number" min="1" value="4" required></label>
-          <label>Temps<input id="time" placeholder="Ex. 45 min"></label>
-        </div>
-        <label>Ingrédients <span class="hint">1 ligne = quantité unité nom (ex. 200 g farine)</span><textarea id="ingredients" rows="6" required></textarea></label>
-        <label>Préparation<textarea id="steps" rows="6" required></textarea></label>
-        <label>Photos depuis le téléphone ou le PC<input id="photos" type="file" accept="image/*" capture="environment" multiple></label>
-        <div id="photoPreview" class="photo-grid"></div>
-        <div class="form-actions">
-          <button type="submit">Enregistrer</button>
-          <button id="resetBtn" type="button" class="ghost">Nouveau</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="content">
-      <div class="toolbar panel">
-        <label>Recherche<input id="search" placeholder="Nom, ingrédient..."></label>
-        <label>Type<select id="filterType"></select></label>
-        <label>Trier<select id="sortBy"><option value="date">Dernières ajoutées</option><option value="name">Nom A-Z</option><option value="type">Type</option></select></label>
+  <main class="content-shell">
+    <section class="toolbar panel" aria-label="Filtres des recettes">
+      <label>Recherche<input id="search" placeholder="Nom, ingrédient..."></label>
+      <label>Type<select id="filterType"></select></label>
+      <label>Trier<select id="sortBy"><option value="date">Dernières ajoutées</option><option value="name">Nom A-Z</option><option value="type">Type</option></select></label>
+      <div class="view-switch" role="group" aria-label="Mode d'affichage">
+        <button id="cardViewBtn" class="active" type="button">Cartes</button>
+        <button id="listViewBtn" class="ghost" type="button">Liste</button>
       </div>
-      <div id="recipeList" class="cards"></div>
     </section>
+    <section id="recipeList" class="cards" aria-live="polite"></section>
   </main>
 
+  <dialog id="recipeDialog" class="modal recipe-modal">
+    <form id="recipeForm" method="dialog">
+      <div class="modal-head">
+        <div><p class="eyebrow">Recette</p><h2 id="formTitle">Ajouter une recette</h2></div>
+        <button class="ghost icon" value="cancel" type="button" data-close="recipeDialog">×</button>
+      </div>
+      <input type="hidden" id="recipeId">
+      <div class="form-grid">
+        <label>Nom de la recette<input id="name" required placeholder="Ex. Lasagnes maison"></label>
+        <label>Type<select id="type" required></select></label>
+        <label>Personnes de base<input id="servings" type="number" min="1" value="4" required></label>
+        <label>Temps<input id="time" placeholder="Ex. 45 min"></label>
+      </div>
+      <label>Ingrédients <span class="hint">1 ligne = quantité unité nom (ex. 200 g farine)</span><textarea id="ingredients" rows="10" required></textarea></label>
+      <label>Préparation<textarea id="steps" rows="12" required></textarea></label>
+      <label>Photos depuis le téléphone ou le PC<input id="photos" type="file" accept="image/*" capture="environment" multiple></label>
+      <div id="photoPreview" class="photo-grid"></div>
+      <div class="form-actions">
+        <button type="submit">Enregistrer</button>
+        <button id="resetBtn" type="button" class="ghost">Nouveau</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="detailDialog" class="modal detail-modal">
+    <article id="detailContent"></article>
+  </dialog>
+
+  <dialog id="imageDialog" class="modal image-modal">
+    <button class="ghost icon image-close" type="button" data-close="imageDialog">×</button>
+    <img id="largeImage" alt="Photo agrandie">
+  </dialog>
+
   <template id="cardTemplate">
-    <article class="card">
+    <article class="card recipe-item" tabindex="0">
       <div class="cover"></div>
       <div class="card-body">
         <div class="card-head"><div><span class="badge"></span><h3></h3></div><button class="delete ghost" title="Supprimer">×</button></div>
@@ -62,7 +75,7 @@
         <h4>Ingrédients adaptés</h4><ul class="ingredientList"></ul>
         <h4>Préparation</h4><p class="steps"></p>
         <div class="photos photo-grid"></div>
-        <button class="edit">Modifier</button>
+        <div class="card-actions"><button class="edit">Modifier</button><button class="pdf ghost">PDF</button></div>
       </div>
     </article>
   </template>

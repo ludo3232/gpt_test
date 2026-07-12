@@ -57,9 +57,14 @@ function scaledIngredients(recipe, targetServings = recipe.servings) {
   return recipe.ingredients.map((line) => parseIngredient(line, factor));
 }
 
+function createClientId() {
+  if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
+  return `recipe-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function recipeFromForm() {
   return {
-    id: $('recipeId').value || crypto.randomUUID(),
+    id: $('recipeId').value || createClientId(),
     name: $('name').value.trim(),
     type: $('type').value,
     servings: Number($('servings').value),

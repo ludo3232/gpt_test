@@ -166,8 +166,6 @@ function cardFor(recipe) {
     event.stopPropagation();
     openImage(img.src);
   }));
-  wireButton(node.querySelector('.edit'), () => editRecipe(recipe.id));
-  wireButton(node.querySelector('.pdf'), () => exportRecipePdf(recipe.id));
   return card;
 }
 

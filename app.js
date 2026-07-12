@@ -254,6 +254,9 @@ fillSelect($('filterType'), true);
 ['search', 'filterType', 'sortBy'].forEach((id) => $(id).addEventListener('input', render));
 $('openRecipeBtn').addEventListener('click', () => openRecipeDialog());
 $('settingsBtn').addEventListener('click', () => $('settingsDialog').showModal());
+$('imageDialog').addEventListener('click', (event) => {
+  if (event.target === $('imageDialog')) closeDialog('imageDialog');
+});
 $('resetBtn').addEventListener('click', () => resetForm());
 $('exportBtn').addEventListener('click', downloadDatabase);
 $('cardViewBtn').addEventListener('click', () => setView('cards'));
@@ -298,13 +301,21 @@ $('photos').addEventListener('change', async (event) => {
 });
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const recipe = await saveRecipeToServer(recipeFromForm());
-  const index = recipes.findIndex((item) => item.id === recipe.id);
-  if (index >= 0) recipes[index] = recipe;
-  else recipes.unshift(recipe);
-  resetForm();
-  $('recipeDialog').close();
-  render();
+  const submitButton = form.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    const recipe = await saveRecipeToServer(recipeFromForm());
+    const index = recipes.findIndex((item) => item.id === recipe.id);
+    if (index >= 0) recipes[index] = recipe;
+    else recipes.unshift(recipe);
+    resetForm();
+    closeDialog('recipeDialog');
+    render();
+  } catch (error) {
+    alert(error.message || 'Impossible d’enregistrer la recette.');
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 
 function setView(nextMode) {
